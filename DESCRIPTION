@@ -1,0 +1,42 @@
+Package: dcmR
+Type: Package
+Title: Dynamic Causal Modelling for Functional MRI
+Version: 0.1.0
+Authors@R: c(
+    person(given = "Godfred", family = "Arhin",
+           email = "arhin0122@gmail.com",
+           role = c("aut", "cre")),
+    person(given = "Nilotpal", family = "Sanyal",
+           email = "nsanyal@utep.edu",
+           role = "aut"),
+    person(given = "SPM12 Authors", role = c("ctb", "cph"),
+           comment = "Original MATLAB SPM12 implementation; see LICENSE.note"))
+Description: Tools for estimating Dynamic Causal Models (DCM) for functional
+    magnetic resonance imaging (fMRI) data using variational Laplace
+    inversion (Friston et al., 2003 <doi:10.1016/S1053-8119(03)00202-7>).
+    The package provides Bayesian estimation of effective connectivity
+    among brain regions from BOLD time series, including the bilinear
+    neural state equation and the Buxton-Friston hemodynamic response
+    model. The implementation is an R port of the corresponding routines
+    in the MATLAB SPM12 toolbox, with optimizations for the integration
+    and Gauss-Newton inner loops.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.0.0)
+Imports:
+    Matrix,
+    expm,
+    MASS,
+    methods,
+    stats
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+URL: https://github.com/Kay202/dcmR
+BugReports: https://github.com/Kay202/dcmR/issues
+RoxygenNote: 7.3.1
+VignetteBuilder: knitr
+Config/testthat/edition: 3

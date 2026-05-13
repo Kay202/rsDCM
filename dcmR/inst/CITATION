@@ -1,0 +1,30 @@
+citHeader("To cite dcmR in publications, please use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "dcmR: Dynamic Causal Modelling for Functional MRI",
+  author  = c(
+    person("Godfred",  "Arhin"),
+    person("Nilotpal", "Sanyal")
+  ),
+  year    = format(Sys.Date(), "%Y"),
+  note    = paste("R package version", meta$Version),
+  url     = "https://github.com/Kay202/dcmR"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Dynamic causal modelling",
+  author  = c(
+    person("K.J.", "Friston"),
+    person("L.",   "Harrison"),
+    person("W.",   "Penny")
+  ),
+  journal = "NeuroImage",
+  year    = "2003",
+  volume  = "19",
+  number  = "4",
+  pages   = "1273--1302",
+  doi     = "10.1016/S1053-8119(03)00202-7",
+  header  = "The underlying methodology is described in:"
+)
