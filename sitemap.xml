@@ -5,12 +5,10 @@
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
 <url><loc>/news/index.html</loc></url>
-<url><loc>/reference/dcm_Ce.html</loc></url>
-<url><loc>/reference/dcm_Ncdf.html</loc></url>
-<url><loc>/reference/dcm_Q.html</loc></url>
 <url><loc>/reference/dcm_bireduce.html</loc></url>
 <url><loc>/reference/dcm_blocks_to_mat.html</loc></url>
 <url><loc>/reference/dcm_cat.html</loc></url>
+<url><loc>/reference/dcm_Ce.html</loc></url>
 <url><loc>/reference/dcm_data_id.html</loc></url>
 <url><loc>/reference/dcm_detrend.html</loc></url>
 <url><loc>/reference/dcm_diag.html</loc></url>
@@ -33,9 +31,10 @@
 <url><loc>/reference/dcm_inv.html</loc></url>
 <url><loc>/reference/dcm_kernels.html</loc></url>
 <url><loc>/reference/dcm_length.html</loc></url>
+<url><loc>/reference/dcm_logdet.html</loc></url>
 <url><loc>/reference/dcm_log_evidence.html</loc></url>
 <url><loc>/reference/dcm_log_evidence_reduce.html</loc></url>
-<url><loc>/reference/dcm_logdet.html</loc></url>
+<url><loc>/reference/dcm_Ncdf.html</loc></url>
 <url><loc>/reference/dcm_nlsi_GN.html</loc></url>
 <url><loc>/reference/dcm_peb_design.html</loc></url>
 <url><loc>/reference/dcm_peb_files.html</loc></url>
@@ -45,6 +44,7 @@
 <url><loc>/reference/dcm_peb_run.html</loc></url>
 <url><loc>/reference/dcm_phi.html</loc></url>
 <url><loc>/reference/dcm_pinv.html</loc></url>
+<url><loc>/reference/dcm_Q.html</loc></url>
 <url><loc>/reference/dcm_speye.html</loc></url>
 <url><loc>/reference/dcm_svd.html</loc></url>
 <url><loc>/reference/dcm_trace.html</loc></url>
