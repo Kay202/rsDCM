@@ -84,29 +84,56 @@
       </header><div class="row">
   <div class="contents col-md-9">
 
-<p><img src="reference/figures/logo.png" align="right" style="float:right; height:122px;"></p>
+<p><img src="reference/figures/logo.png" align="right" style="float:right; height:118px;"></p>
 <div class="section level1">
 <div class="page-header"><h1 id="rsdcm-robust-and-sparse-dynamic-causal-modelling-for-functional-mri">rsDCM: Robust and Sparse Dynamic Causal Modelling for Functional MRI<a class="anchor" aria-label="anchor" href="#rsdcm-robust-and-sparse-dynamic-causal-modelling-for-functional-mri"></a>
 </h1></div>
 <!-- badges: start -->
 
-<p><code>rsDCM</code> is an R package for Dynamic Causal Modelling (DCM) of functional MRI data. It is an R port of the corresponding routines in the MATLAB SPM25 toolbox, with optimizations for the integration and Gauss-Newton inner loops.</p>
+<p><code>rsDCM</code> is an R package that provides a robust and sparse method for group-level Dynamic Causal Modelling (DCM) of fMRI data, together with an R implementation of single-subject DCM ported from the MATLAB SPM25 toolbox.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>From GitHub (development version):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"Kay202/rsDCM"</span><span class="op">)</span></span></code></pre></div>
-<p>From CRAN, once published:</p>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"Kay202/rsDCM"</span><span class="op">)</span></span></code></pre></div>
+<p>From CRAN:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"rsDCM"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
+<p>The following is an example of using the main function <code><a href="reference/rsDCM-package.html">rsDCM()</a></code></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kay202/rsDCM" class="external-link">rsDCM</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kay202.github.io/rsDCM/" class="external-link">rsDCM</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Real 48-subject NARPS group analysis. The inputs are precomputed</span></span>
+<span><span class="co"># subject-level DCM summaries (a posterior mean and covariance per subject).</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">)</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span><span class="op">)</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Per-parameter variance-component basis, and an intercept-only design.</span></span>
+<span><span class="va">V_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="op">{</span> <span class="va">V</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span>, <span class="va">p</span><span class="op">)</span>; <span class="va">V</span><span class="op">[</span><span class="va">k</span>, <span class="va">k</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>; <span class="va">V</span> <span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">X_G</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">N</span>, <span class="fl">1</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="st">"intercept"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># rsDCM fit</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rsdcm.html">rsdcm</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span>, <span class="va">narps_dcm</span><span class="op">$</span><span class="va">Cp</span>, <span class="va">X_G</span>, <span class="va">V_list</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">beta_mat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">inclusion</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">narps_dcm</span><span class="op">$</span><span class="va">parameter_names</span></span>
+<span></span>
+<span><span class="co"># Group-level connections selected by the spike-and-slab prior (PIP &gt; 0.5)</span></span>
+<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">inclusion</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0.5</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">beta_mat</span><span class="op">[</span><span class="va">sel</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>            PIP      <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">inclusion</span><span class="op">[</span><span class="va">sel</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Subjects the Student-t weighting down-weights most</span></span>
+<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">weights</span>, <span class="va">N</span>, <span class="va">p</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">subject</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></code></pre></div>
+<p>The following is an example of fitting original DCM using this package:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kay202.github.io/rsDCM/" class="external-link">rsDCM</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Three-region toy DCM shipped with the package (482 scans, one input)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">toy_dcm</span><span class="op">)</span></span>
@@ -120,7 +147,7 @@
 <span><span class="co"># Variational free energy (log-evidence proxy)</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="cn">F</span></span></code></pre></div>
 <p>The introductory vignette has more detail:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"introduction"</span>, package <span class="op">=</span> <span class="st">"rsDCM"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
