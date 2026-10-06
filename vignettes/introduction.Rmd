@@ -1,8 +1,8 @@
 ---
-title: "Introduction to dcmR"
+title: "Introduction to rsDCM"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to dcmR}
+  %\VignetteIndexEntry{Introduction to rsDCM}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,37 +17,78 @@ knitr::opts_chunk$set(
 
 # Overview
 
-`dcmR` is an R port of the Dynamic Causal Modelling (DCM) routines from
-the MATLAB SPM12 toolbox. It estimates effective connectivity among
+`rsDCM` is an R port of the Dynamic Causal Modelling (DCM) routines from
+the MATLAB SPM25 toolbox. It estimates effective connectivity among
 brain regions from fMRI BOLD time series using variational Laplace
 inversion (Friston et al., 2003).
 
 This vignette walks through a minimal end-to-end example using the
-synthetic `toy_dcm` dataset shipped with the package.
+`toy_dcm` dataset shipped with the package.
 
 ```{r setup}
-library(dcmR)
+library(rsDCM)
 ```
 
-# A two-region toy model
+# The toy model
 
-The package includes a synthetic 2-region, 64-sample DCM whose only
-purpose is to exercise the inversion machinery quickly.
+The package includes a three-region, 482-scan DCM with a single driving
+input, derived from the fMRI data of Valério et al. (2025) during package
+development (see `?toy_dcm`).
 
 ```{r}
 data(toy_dcm)
 str(toy_dcm, max.level = 1)
+c(regions = toy_dcm$n, scans = toy_dcm$v)
 ```
 
-The structure follows the SPM12 convention:
+The structure follows the SPM25 convention:
 
-- `a`, `b`, `c`, `d` are the connectivity / modulatory / driving /
-  non-linear adjacency arrays.
+- `a`, `b`, `c` are the connectivity / modulatory / driving adjacency
+  arrays. (A fourth array, `d`, specifies non-linear connections; this
+  model is deterministic, so it has none.)
 - `Y$y` is the BOLD data (rows = scans, columns = regions).
 - `U$u` is the input design at the microtime resolution.
 - `options` controls the model variant (deterministic, two-state, etc.).
 
+# Simulating a BOLD response
+
+Before inverting anything, look at the forward model on its own.
+`dcm_int` integrates a model and returns the predicted BOLD, and it
+is fast enough to run here. We build priors for a two-region model, then
+switch on a driving input to region 1 and a connection from region 1 to
+region 2:
+
+```{r, fig.alt = "Simulated BOLD response of two regions to a boxcar input"}
+n   <- 2L
+pri <- dcm_fmri_priors(A = matrix(1, n, n),
+                       B = array(0, c(n, n, 1)),
+                       C = matrix(c(1, 0), n, 1),
+                       D = array(0, c(n, n, 0)),
+                       options = list())
+
+U <- list(u = matrix(c(rep(1, 16), rep(0, 16)), ncol = 1), dt = 1)
+M <- list(f = "dcm_fx_fmri", g = "dcm_gx_fmri", x = pri$x,
+          m = ncol(U$u), n = length(pri$x), l = nrow(pri$x), ns = 32)
+
+P <- pri$pE
+P$C[1, 1] <- 1     # input drives region 1
+P$A[2, 1] <- 0.4   # region 1 -> region 2
+
+y <- dcm_int(P, M, U)
+
+matplot(y, type = "l", lty = 1, xlab = "scan", ylab = "BOLD",
+        main = "Simulated response to a boxcar input")
+legend("topright", c("region 1", "region 2"), lty = 1, col = 1:2, bty = "n")
+```
+
+Region 2 responds only because of the `A[2, 1]` connection. That
+coupling is what the inversion below recovers.
+
 # Inverting the model
+
+Inverting `toy_dcm` runs the full Gauss-Newton loop and takes roughly
+75 seconds, so it is not evaluated when this vignette is built. Run it
+yourself to reproduce the output shown below.
 
 ```{r, eval = FALSE}
 fit <- dcm_estimate(toy_dcm)
@@ -56,12 +97,12 @@ fit <- dcm_estimate(toy_dcm)
 `dcm_estimate` returns the input DCM augmented with posterior
 fields:
 
-- `Ep` — posterior expectation of the parameters (same shape as the
+- `Ep`: posterior expectation of the parameters (same shape as the
   prior).
-- `Cp` — posterior covariance.
-- `F`  — variational free energy (the log-evidence proxy used for
+- `Cp`: posterior covariance.
+- `F`: variational free energy (the log-evidence proxy used for
   model comparison).
-- `y`, `R` — predicted BOLD and residuals.
+- `y`, `R`: predicted BOLD and residuals.
 
 ```{r, eval = FALSE}
 round(fit$Ep$A, 3)   # estimated connectivity
@@ -87,26 +128,48 @@ ev$bic_overall
 # Tuning
 
 The finite-difference step used by the numerical Jacobian is exposed
-via `dcm_options()`:
+via `rsdcm_options()`:
 
 ```{r}
-dcm_options()$GLOBAL_DX
+rsdcm_options()$GLOBAL_DX
 ```
 
-The default `exp(-8)` is what SPM12 uses; widen it (e.g. `1e-4`) if
+The default `exp(-8)` is what SPM25 uses; widen it (e.g. `1e-4`) if
 you observe numerical issues with very flat regions of the likelihood.
+
+# Group-level modelling
+
+The package's main method, `rsdcm()`, fits a robust and sparse group-level
+model to subject-level DCM estimates: Student-t weighting of subjects, a
+nonlocal product-moment (pMOM) spike-and-slab prior for sparse selection of
+group effects, and ReML variance components (Arhin and Sanyal, 2026). It
+ships `narps_dcm`, a 48-subject example derived from the openly shared NARPS
+dataset (Botvinik-Nezer et al., 2020); see `?rsdcm` for a runnable example.
 
 # Acknowledgment
 
-`dcmR` is a derivative work of the MATLAB SPM12 toolbox, distributed
+`rsDCM` is a derivative work of the MATLAB SPM25 toolbox, distributed
 under GPL-2 by the Wellcome Centre for Human Neuroimaging. See the
 `LICENSE.note` file in the package source for the list of ported
 routines.
 
 # References
 
+- Arhin, G., Sanyal, N. (2026). Robust and sparse group dynamic causal
+  modeling via Student-t parametric empirical Bayes and nonlocal priors.
+  arXiv:2609.06379. <https://doi.org/10.48550/arXiv.2609.06379>
+- Botvinik-Nezer, R., Holzmeister, F., Camerer, C.F., et al. (2020).
+  Variability in the analysis of a single neuroimaging dataset by many
+  teams. *Nature*, **582**(7810), 84-88.
+  <https://doi.org/10.1038/s41586-020-2314-9>
 - Friston, K.J., Harrison, L., Penny, W. (2003). Dynamic causal
   modelling. *NeuroImage*, **19**(4), 1273-1302.
+  <https://doi.org/10.1016/S1053-8119(03)00202-7>
 - Friston, K.J., Mattout, J., Trujillo-Barreto, N., Ashburner, J.,
   Penny, W. (2007). Variational free energy and the Laplace
   approximation. *NeuroImage*, **34**(1), 220-234.
+  <https://doi.org/10.1016/j.neuroimage.2006.08.035>
+- Valério, D., Peres, A., Bergström, F., Seidel, P., Almeida, J. (2025).
+  Neural and behavioral similarity-driven tuning curves for manipulable
+  objects. *Imaging Neuroscience*, **3**.
+  <https://doi.org/10.1162/imag_a_00482>

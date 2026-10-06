@@ -66,10 +66,10 @@ test_that("dcm_gx_fmri returns BOLD prediction of the right length", {
   expect_true(all(is.finite(out$g)))
 })
 
-test_that("dcm_options round-trips a value", {
-  old <- dcm_options()$GLOBAL_DX
-  dcm_options(GLOBAL_DX = 1e-6)
-  expect_equal(dcm_options()$GLOBAL_DX, 1e-6)
-  dcm_options(GLOBAL_DX = old)
-  expect_equal(dcm_options()$GLOBAL_DX, old)
+test_that("rsdcm_options round-trips a value", {
+  old <- rsdcm_options()$GLOBAL_DX
+  rsdcm_options(GLOBAL_DX = 1e-6)
+  expect_equal(rsdcm_options()$GLOBAL_DX, 1e-6)
+  rsdcm_options(GLOBAL_DX = old)
+  expect_equal(rsdcm_options()$GLOBAL_DX, old)
 })

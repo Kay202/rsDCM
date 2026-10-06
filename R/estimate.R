@@ -1,28 +1,43 @@
-# =============================================================================
 # Top-level DCM estimation entry point and Bayesian model evidence helpers.
-# =============================================================================
 
 #' Estimate a Dynamic Causal Model for fMRI
 #'
 #' Inverts a fully-specified DCM using variational Laplace inversion. This
-#' is the main user-facing entry point of the package. Mirrors SPM12's
-#' \code{dcm_estimate}, with the following CRAN-friendly behavioural
-#' changes: progress messages are emitted via \code{message()} (silenceable
-#' with \code{suppressMessages()}), and writing the result back to disk is
-#' opt-in via the \code{save} argument.
+#' is the main user-facing entry point of the package. Mirrors SPM25's
+#' \code{dcm_estimate}. Progress is reported via \code{message()} and can be
+#' silenced with \code{suppressMessages()}.
 #'
 #' @param P A DCM list, or a path to an \code{.RData}/\code{.rds} file
 #'   containing one.
 #' @param save Logical. If \code{TRUE} and \code{P} is a file path, the
-#'   estimated DCM is saved back to that path. Defaults to \code{FALSE} to
-#'   comply with CRAN policy on writing to user files without consent.
-#' @return The estimated DCM (a list) with posterior fields populated.
+#'   estimated DCM is saved back to that path.
+#' @return The estimated DCM (a list) with posterior fields populated. The
+#'   main fields of interest are \code{Ep} (posterior expectations, with
+#'   \code{Ep$A}, \code{Ep$B}, \code{Ep$C} the connectivity estimates),
+#'   \code{Cp} (posterior covariance), \code{Pp} (posterior probabilities),
+#'   and \code{F} (the negative free energy, used for model comparison).
+#' @section Supported model variants:
+#' This release implements only the \strong{deterministic, single-state} fMRI
+#' DCM. The two-state (\code{options$two_state}), stochastic
+#' (\code{options$stochastic}) and spectral / cross-spectral-density
+#' (\code{options$induced}) variants are \emph{not} yet implemented: switching
+#' any of them on causes \code{dcm_estimate} to stop with an informative error.
+#' These variants are planned for a future update. Non-linear DCM (a non-empty
+#' \code{d} array) is supported.
 #' @examples
-#' \dontrun{
-#'   data(toy_dcm)
-#'   fit <- dcm_estimate(toy_dcm)
-#'   round(fit$Ep$A, 3)
+#' data(toy_dcm)
+#' str(toy_dcm, max.level = 1)
+#'
+#' \donttest{
+#' # Full inversion of the bundled three-region model (takes about a minute).
+#' # Progress reporting goes through message(), so it can be silenced.
+#' fit <- suppressMessages(dcm_estimate(toy_dcm))
+#' round(fit$Ep$A, 3)   # posterior connectivity estimates
+#' round(fit$Pp$A, 3)   # posterior probability each connection is non-zero
+#' fit$F                # negative free energy, for model comparison
 #' }
+#' @seealso \code{\link{dcm_nlsi_GN}} for the underlying inversion,
+#'   \code{\link{dcm_fmri_priors}} for the priors it constructs.
 #' @export
 dcm_estimate <- function(P, save = FALSE) {
   if (missing(P)) stop("DCM structure or filename required.")
@@ -48,6 +63,33 @@ dcm_estimate <- function(P, save = FALSE) {
   if (is.null(DCM$options$hidden))     DCM$options$hidden     <- integer(0)
   if (is.null(DCM$options$hE))         DCM$options$hE         <- 6
   if (is.null(DCM$options$hC))         DCM$options$hC         <- 1 / 128
+
+  # Reject DCM variants that are not yet implemented. Only the deterministic,
+  # single-state model is wired through the estimator; two-state / stochastic /
+  # induced are checked against the user-supplied options (before the internal
+  # defaults below, e.g. the stochastic flag auto-set for null inputs) so we
+  # stop loudly instead of silently running the deterministic model.
+  .dcm_unsupported <- list(
+    two_state  = "the two-state neural model",
+    stochastic = "stochastic DCM",
+    induced    = "spectral (cross-spectral density) DCM"
+  )
+  for (.opt in names(.dcm_unsupported)) {
+    .val <- DCM$options[[.opt]]
+    .on  <- isTRUE(.val) ||
+      (is.numeric(.val) && length(.val) == 1L && !is.na(.val) && .val != 0)
+    if (.on) {
+      stop(sprintf(
+        paste0("options$%s = %s requests %s, which is not yet implemented in ",
+               "rsDCM. This release supports only the deterministic, ",
+               "single-state fMRI DCM; %s is planned for a future update. ",
+               "Set options$%s = 0 (or remove it) to run the deterministic ",
+               "model."),
+        .opt, format(.val), .dcm_unsupported[[.opt]],
+        .dcm_unsupported[[.opt]], .opt),
+        call. = FALSE)
+    }
+  }
 
   if (is.null(DCM$n)) DCM$n <- nrow(DCM$a)
   if (is.null(DCM$v)) DCM$v <- nrow(DCM$Y$y)
@@ -149,8 +191,8 @@ dcm_estimate <- function(P, save = FALSE) {
   K  <- dcm_kernels(M0, M1, L_mat, M$N, M$dt); K1 <- K$H1
 
   Tvec <- as.numeric(dcm_vec(pE))
-  sw   <- options(warn = -1); on.exit(options(sw), add = TRUE)
-  Pp_vec <- 1 - dcm_Ncdf(Tvec, abs(as.numeric(dcm_vec(Ep))), diag(Cp))
+  Pp_vec <- suppressWarnings(
+    1 - dcm_Ncdf(Tvec, abs(as.numeric(dcm_vec(Ep))), diag(Cp)))
   Pp <- dcm_unvec(Pp_vec, Ep); Vp <- dcm_unvec(diag(Cp), Ep)
 
   DCM$M <- M; DCM$Y <- Y; DCM$U <- U; DCM$Ce <- Ce
@@ -175,7 +217,7 @@ dcm_estimate <- function(P, save = FALSE) {
 #' Bayesian model reduction (full-rank)
 #'
 #' Computes the change in log-evidence and the reduced posterior when
-#' replacing the original prior with a reduced prior. Mirrors SPM12's
+#' replacing the original prior with a reduced prior. Mirrors SPM25's
 #' \code{dcm_log_evidence}.
 #'
 #' @param qE Posterior expectation under the original priors.
@@ -233,7 +275,7 @@ dcm_log_evidence <- function(qE, qC, pE, pC, rE = NULL, rC = NULL, ...) {
 
 #' Bayesian model reduction (subspace projection)
 #'
-#' Reduced-rank version of \code{\link{dcm_log_evidence}}. Mirrors SPM12's
+#' Reduced-rank version of \code{\link{dcm_log_evidence}}. Mirrors SPM25's
 #' \code{dcm_log_evidence_reduce}.
 #'
 #' @inheritParams dcm_log_evidence
@@ -285,7 +327,7 @@ dcm_log_evidence_reduce <- function(qE, qC, pE, pC, rE, rC, TOL = 1e-8) {
 #' Approximate model evidence (AIC, BIC)
 #'
 #' AIC and BIC penalties for an estimated DCM, plus per-region cost terms.
-#' Mirrors SPM12's \code{spm_dcm_evidence}.
+#' Mirrors SPM25's \code{spm_dcm_evidence}.
 #'
 #' @param DCM An estimated DCM.
 #' @return List with per-region cost, AIC penalty, BIC penalty, and overall

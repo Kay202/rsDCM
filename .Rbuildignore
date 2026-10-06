@@ -5,6 +5,7 @@
 ^\.github$
 ^\.gitignore$
 ^cran-comments\.md$
+^cran-comments\.txt$
 ^BUILD_AND_RELEASE\.md$
 ^doc$
 ^Meta$

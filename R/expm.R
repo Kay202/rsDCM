@@ -1,12 +1,10 @@
-# =============================================================================
 # Matrix exponential utilities and the local-linearization integration step
 # dcm_dx (internal).
-# =============================================================================
 
 #' Local linearisation integration step
 #'
 #' Computes a one-step Bayesian update \code{dx = (expm(t*J) - I) * J^{-1} * f}
-#' via an augmented matrix exponential. Mirrors SPM12's \code{spm_dx}.
+#' via an augmented matrix exponential. Mirrors SPM25's \code{spm_dx}.
 #'
 #' @param dfdx Jacobian \code{df/dx} of the model.
 #' @param f Current residual / gradient.
@@ -173,11 +171,19 @@ padm <- function(A, p = 6) {
 
 #' Scaled-and-squared matrix exponential
 #'
-#' SPM12-style matrix exponential used as a fallback to \code{\link[expm]{expm}}.
+#' SPM25-style matrix exponential used as a fallback to \code{\link[expm]{expm}}.
 #'
 #' @param J Square matrix.
 #' @param x Optional vector to multiply by \code{expm(J)} on the right.
 #' @return Matrix or vector.
+#' @examples
+#' # expm of a diagonal matrix is just exp() of the diagonal
+#' J <- diag(c(-1, -2))
+#' round(dcm_expm(J), 8)
+#' round(diag(exp(c(-1, -2))), 8)
+#'
+#' # Supplying x returns expm(J) %*% x without forming the product yourself
+#' round(dcm_expm(J, c(1, 1)), 8)
 #' @keywords internal
 #' @export
 dcm_expm <- function(J, x = NULL) {

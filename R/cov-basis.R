@@ -1,7 +1,4 @@
-# =============================================================================
-# Error covariance basis functions (internal). Used to construct the Q matrices
-# that decompose the residual covariance in dcm_nlsi_GN.
-# =============================================================================
+# Error covariance basis functions (internal): the Q matrices for dcm_nlsi_GN.
 
 # Internal: sparse identity of size n
 .speye_Ce <- function(n) .Diag(n)
@@ -48,7 +45,7 @@
 #' Error-covariance basis (AR or FAST)
 #'
 #' Construct a list of covariance basis matrices for the noise model in
-#' variational inversion. Mirrors SPM12's \code{spm_Ce}.
+#' variational inversion. Mirrors SPM25's \code{spm_Ce}.
 #'
 #' @param t Either a numeric vector of session lengths (defaults to AR basis)
 #'   or a string \code{"ar"} / \code{"fast"} selecting the basis type.

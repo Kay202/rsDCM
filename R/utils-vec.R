@@ -1,17 +1,21 @@
-# =============================================================================
-# Vector / list flattening utilities (internal). These are the data-marshalling
-# primitives used everywhere — turning nested DCM parameter structures into
-# flat numeric vectors and back. Performance-critical.
-# =============================================================================
+# Vector / list flattening utilities (internal). Performance-critical.
 
 #' Flatten a nested numeric structure into a vector
 #'
 #' Recursively walks a numeric, logical, or nested list structure and returns
-#' a single flat numeric vector. Internal helper; mirrors SPM12's \code{spm_vec}.
+#' a single flat numeric vector. Internal helper; mirrors SPM25's \code{spm_vec}.
 #'
 #' @param X A numeric, logical, or list (possibly nested).
 #' @param ... Additional structures to flatten and concatenate.
 #' @return A numeric vector.
+#' @examples
+#' # A DCM parameter structure flattens in field order
+#' P <- list(A = matrix(1:4, 2), C = c(5, 6))
+#' dcm_vec(P)
+#'
+#' # Nested lists are walked recursively
+#' dcm_vec(list(a = 1, b = list(c = 2:3, d = 4)))
+#' @seealso \code{\link{dcm_unvec}} for the inverse operation.
 #' @keywords internal
 #' @export
 dcm_vec <- function(X, ...) {
@@ -53,6 +57,10 @@ dcm_vec <- function(X, ...) {
 #'
 #' @param X A numeric, logical, or list (possibly nested).
 #' @return Integer length.
+#' @examples
+#' P <- list(A = matrix(1:4, 2), C = c(5, 6))
+#' dcm_length(P)            # 6
+#' length(dcm_vec(P))       # same, but allocates the vector
 #' @keywords internal
 #' @export
 dcm_length <- function(X) {
@@ -82,6 +90,15 @@ dcm_length <- function(X) {
 #' @param ... One or more templates whose structure is copied; \code{vX} is
 #'   distributed across them in order.
 #' @return A structure (or list of structures) matching the templates.
+#' @examples
+#' # Round-trip: flatten a structure and rebuild it
+#' P <- list(A = matrix(1:4, 2), C = c(5, 6))
+#' identical(dcm_unvec(dcm_vec(P), P), P)
+#'
+#' # The template supplies the shape; the vector supplies the values
+#' tmpl <- list(A = matrix(0, 2, 2), C = numeric(2))
+#' dcm_unvec(1:6, tmpl)
+#' @seealso \code{\link{dcm_vec}} for the forward operation.
 #' @keywords internal
 #' @export
 dcm_unvec <- function(vX, ...) {
@@ -137,6 +154,8 @@ dcm_unvec <- function(vX, ...) {
 #'
 #' @param X A nested structure.
 #' @return A structure with zeros, same shape as \code{X}.
+#' @examples
+#' dcm_zeros(list(A = matrix(1:4, 2), C = c(5, 6)))
 #' @keywords internal
 #' @export
 dcm_zeros <- function(X) dcm_unvec(rep(0, dcm_length(X)), X)

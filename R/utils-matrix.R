@@ -1,17 +1,21 @@
-# =============================================================================
-# Matrix utilities (internal). Wrappers around Matrix/MASS that make the rest
-# of the package agnostic to dense vs sparse representation.
-# =============================================================================
+# Matrix utilities (internal): dense/sparse-agnostic wrappers over Matrix/MASS.
 
 #' Inverse of an ill-conditioned matrix
 #'
 #' Computes \code{solve(A + tol*I)} with an automatically chosen tolerance,
-#' matching SPM12's \code{spm_inv}. Includes a fast path for diagonal
+#' matching SPM25's \code{spm_inv}. Includes a fast path for diagonal
 #' \code{Matrix} objects.
 #'
 #' @param A Square numeric matrix (dense or \code{Matrix}).
 #' @param TOL Optional tolerance. If \code{NULL}, set automatically.
 #' @return Inverse matrix.
+#' @examples
+#' A <- matrix(c(2, 1, 1, 2), 2, 2)
+#' dcm_inv(A)
+#'
+#' # Unlike solve(), a singular matrix is regularised rather than an error
+#' singular <- matrix(1, 2, 2)
+#' dcm_inv(singular)
 #' @keywords internal
 #' @export
 dcm_inv <- function(A, TOL = NULL) {
@@ -19,7 +23,7 @@ dcm_inv <- function(A, TOL = NULL) {
   if (length(A) == 0) {
     return(if (.has_Matrix) .spzero(n, m) else matrix(0, nrow = n, ncol = m))
   }
-  # Fast path: diagonal Matrix — stays in Matrix world.
+  # Fast path: diagonal Matrix stays in Matrix world.
   if (.has_Matrix && inherits(A, "diagonalMatrix") && m == n) {
     d <- Matrix::diag(A)
     if (is.null(TOL)) TOL <- max(.Machine$double.eps * max(abs(d)) * m, exp(-32))
@@ -40,6 +44,10 @@ dcm_inv <- function(A, TOL = NULL) {
 #' @param A Numeric matrix.
 #' @param TOL Singular-value tolerance.
 #' @return Pseudo-inverse of \code{A}.
+#' @examples
+#' # Left inverse of a tall matrix
+#' A <- matrix(c(1, 2, 3, 4, 5, 7), nrow = 3)
+#' round(dcm_pinv(A) %*% A, 8)   # ~ 2 x 2 identity
 #' @keywords internal
 #' @export
 dcm_pinv <- function(A, TOL = NULL) {
@@ -47,8 +55,7 @@ dcm_pinv <- function(A, TOL = NULL) {
   m <- nrow(A); n <- ncol(A)
   if (!length(A)) return(if (.has_Matrix) .spzero(n, m) else matrix(0, n, m))
   if (is.null(TOL)) {
-    old_warn <- options(warn = -1)
-    X <- dcm_inv(t(A) %*% A); options(old_warn)
+    X <- suppressWarnings(dcm_inv(t(A) %*% A))
     if (all(is.finite(X))) return(X %*% t(A))
   }
   svd_result <- dcm_svd(A, 0)
@@ -65,11 +72,18 @@ dcm_pinv <- function(A, TOL = NULL) {
 #' Log-determinant of a (semi-)definite matrix
 #'
 #' Robust log-determinant suitable for sparse, dense, or rank-deficient
-#' covariance matrices. Mirrors SPM12's \code{spm_logdet}, with fast paths
+#' covariance matrices. Mirrors SPM25's \code{spm_logdet}, with fast paths
 #' for 1x1 and diagonal inputs.
 #'
 #' @param C Square matrix.
 #' @return Numeric log-determinant (or \code{NaN} if non-positive).
+#' @examples
+#' C <- diag(c(1, 2, 4))
+#' dcm_logdet(C)          # log(1 * 2 * 4)
+#' log(prod(c(1, 2, 4)))  # same
+#'
+#' # Zero rows/columns are dropped rather than sending the result to -Inf
+#' dcm_logdet(diag(c(1, 2, 0)))
 #' @keywords internal
 #' @export
 dcm_logdet <- function(C) {
@@ -133,7 +147,7 @@ dcm_logdet <- function(C) {
 #' Truncated SVD with sparsity awareness
 #'
 #' Computes a thin SVD and drops singular components below a relative
-#' tolerance \code{U}. Mirrors SPM12's \code{spm_svd}.
+#' tolerance \code{U}. Mirrors SPM25's \code{spm_svd}.
 #'
 #' @param X Numeric matrix.
 #' @param U Relative tolerance for retaining singular values.
@@ -210,6 +224,10 @@ dcm_svd <- function(X, U = NULL) {
 #' @param X Matrix.
 #' @param p Optional polynomial detrend order applied first.
 #' @return \code{X} with each non-zero column scaled to unit Euclidean norm.
+#' @examples
+#' X <- matrix(c(3, 4, 0, 0, 5, 12), nrow = 2)
+#' dcm_en(X)
+#' sqrt(colSums(dcm_en(X)^2))  # 1, 0, 1 (the all-zero column is left alone)
 #' @keywords internal
 #' @export
 dcm_en <- function(X, p = NULL) {
@@ -224,6 +242,13 @@ dcm_en <- function(X, p = NULL) {
 #' @param x Matrix or vector.
 #' @param p Polynomial order. \code{p = 0} just centres the columns.
 #' @return Detrended matrix of the same shape.
+#' @examples
+#' # p = 0 centres each column
+#' x <- cbind(1:10, (1:10) * 2 + 5)
+#' round(colMeans(dcm_detrend(x, 0)), 10)
+#'
+#' # p = 1 removes a linear trend, so perfectly linear columns go to ~0
+#' round(dcm_detrend(x, 1), 8)
 #' @keywords internal
 #' @export
 dcm_detrend <- function(x, p = 0) {
@@ -254,12 +279,16 @@ dcm_detrend <- function(x, p = 0) {
 #' Sparse identity-like matrix
 #'
 #' Build an identity-like sparse matrix of any shape, with optional shifted
-#' diagonals. Mirrors SPM12's \code{spm_speye}.
+#' diagonals. Mirrors SPM25's \code{spm_speye}.
 #'
 #' @param m,n Output dimensions.
 #' @param k Diagonal offset (\code{0} for main).
-#' @param c Cyclic-fill flag (0/1/2) as in SPM12.
+#' @param c Cyclic-fill flag (0/1/2) as in SPM25.
 #' @return A sparse \code{Matrix}.
+#' @examples
+#' dcm_speye(3)           # 3 x 3 sparse identity
+#' dcm_speye(3, 3, 1)     # ones on the first super-diagonal
+#' dcm_speye(2, 4)        # non-square is fine
 #' @keywords internal
 #' @export
 dcm_speye <- function(m, n = m, k = 0, c = 0) {

@@ -1,15 +1,28 @@
-citHeader("To cite dcmR in publications, please use:")
+citHeader("To cite rsDCM in publications, please use:")
 
 bibentry(
   bibtype = "Manual",
-  title   = "dcmR: Dynamic Causal Modelling for Functional MRI",
+  title   = "rsDCM: Dynamic Causal Modelling for Functional MRI",
   author  = c(
     person("Godfred",  "Arhin"),
     person("Nilotpal", "Sanyal")
   ),
   year    = format(Sys.Date(), "%Y"),
   note    = paste("R package version", meta$Version),
-  url     = "https://github.com/Kay202/dcmR"
+  url     = "https://github.com/Kay202/rsDCM"
+)
+
+bibentry(
+  bibtype = "Misc",
+  title   = "Robust and Sparse Group Dynamic Causal Modeling via Student-t Parametric Empirical Bayes and Nonlocal Priors",
+  author  = c(
+    person("Godfred",  "Arhin"),
+    person("Nilotpal", "Sanyal")
+  ),
+  year    = "2026",
+  note    = "arXiv preprint arXiv:2609.06379",
+  doi     = "10.48550/arXiv.2609.06379",
+  header  = "The robust and sparse group-level method is described in:"
 )
 
 bibentry(
@@ -26,5 +39,39 @@ bibentry(
   number  = "4",
   pages   = "1273--1302",
   doi     = "10.1016/S1053-8119(03)00202-7",
-  header  = "The underlying methodology is described in:"
+  header  = "The underlying DCM methodology is described in:"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Neural and behavioral similarity-driven tuning curves for manipulable objects",
+  author  = c(
+    person("Daniela",  "Valério"),
+    person("André", "Peres"),
+    person("Fredrik",  "Bergström"),
+    person("Philipp",  "Seidel"),
+    person("Jorge",    "Almeida")
+  ),
+  journal = "Imaging Neuroscience",
+  year    = "2025",
+  volume  = "3",
+  doi     = "10.1162/imag_a_00482",
+  header  = "The bundled toy_dcm example dataset is derived from data in:"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Variability in the analysis of a single neuroimaging dataset by many teams",
+  author  = c(
+    person("Rotem",    "Botvinik-Nezer"),
+    person("Felix",    "Holzmeister"),
+    person("Colin F.", "Camerer")
+  ),
+  journal = "Nature",
+  year    = "2020",
+  volume  = "582",
+  number  = "7810",
+  pages   = "84--88",
+  doi     = "10.1038/s41586-020-2314-9",
+  header  = "The bundled narps_dcm example dataset is derived from data in:"
 )

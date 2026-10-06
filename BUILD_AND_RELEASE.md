@@ -1,4 +1,4 @@
-# dcmR — build & release notes
+# rsDCM: build & release notes
 
 These steps take the package from this scaffold to a working install,
 then to a CRAN submission. Everything in this file is for you (the
@@ -11,7 +11,39 @@ install.packages(c("devtools", "roxygen2", "testthat",
                    "knitr", "rmarkdown", "Matrix", "expm", "MASS"))
 ```
 
-## Step 1 — generate the toy dataset
+### Pandoc: required, and the usual cause of a failed build
+
+`R CMD build` knits `vignettes/introduction.Rmd`, which needs **pandoc**. If
+pandoc is not on the `PATH`, the build does not skip the vignette; it
+**aborts entirely** with:
+
+```
+Error: processing vignette 'introduction.Rmd' failed with diagnostics:
+Pandoc is required to build R Markdown vignettes but not available.
+```
+
+RStudio bundles pandoc and puts it on the `PATH` itself, so this works from
+the RStudio IDE and fails from a plain terminal. Check with:
+
+```r
+rmarkdown::pandoc_available()   # must be TRUE
+rmarkdown::pandoc_version()
+```
+
+If it is `FALSE`, either build from RStudio, or point R at the copy RStudio
+already ships before building:
+
+```r
+Sys.setenv(RSTUDIO_PANDOC =
+  "C:/Program Files/RStudio/resources/app/bin/quarto/bin/tools")
+```
+
+Do **not** work around a failed build by running `tar czf` on the source
+directory by hand. That produces a tarball with an empty `man/` and an
+empty `data/`, so whoever installs it gets no help pages and no `toy_dcm`.
+See "Step 5: build the tarball to send" below for the correct command.
+
+## Step 1: generate the toy dataset
 
 The package ships `data/toy_dcm.rda` but the file isn't in this scaffold
 because it has to be built from R. The build script reads a real DCM
@@ -25,7 +57,7 @@ Rscript data-raw/make-toy-dcm.R
 
 This writes `data/toy_dcm.rda` (target: < 50 KB, xz-compressed).
 
-## Step 2 — regenerate documentation and NAMESPACE
+## Step 2: regenerate documentation and NAMESPACE
 
 The hand-written `NAMESPACE` and the missing `man/*.Rd` files come from
 the roxygen comments. Regenerate them:
@@ -37,7 +69,7 @@ devtools::document()
 This rewrites `NAMESPACE` to match every `@export` tag and creates one
 `.Rd` per documented function in `man/`.
 
-## Step 3 — install locally and run the tests
+## Step 3: install locally and run the tests
 
 ```r
 devtools::install()
@@ -48,7 +80,7 @@ The fast tests (`test-vec.R`, `test-smoke.R`) should pass in a couple of
 seconds. `test-estimate.R` runs the full Gauss-Newton inversion on
 `toy_dcm` (a few seconds) and is skipped on CRAN.
 
-## Step 4 — local CRAN check
+## Step 4: local CRAN check
 
 ```r
 devtools::check()              # equivalent to R CMD check --as-cran
@@ -57,14 +89,51 @@ devtools::check()              # equivalent to R CMD check --as-cran
 You want **0 errors, 0 warnings, 0 notes**. Common things that fall out
 on first check:
 
-* "no visible binding for global variable" — fix with `utils::globalVariables()`
+* "no visible binding for global variable": fix with `utils::globalVariables()`
   or a `@importFrom` tag.
-* "Undocumented arguments" — add `@param` for any missing arg in the
+* "Undocumented arguments": add `@param` for any missing arg in the
   roxygen block.
-* Vignette build failure — usually a missing package; install it.
-* `data/toy_dcm.rda` not found — run Step 1.
+* Vignette build failure: usually a missing package; install it.
+* `data/toy_dcm.rda` not found: run Step 1.
 
-## Step 5 — strengthen the regression test (optional but recommended)
+## Step 5: build the tarball to send
+
+To hand the package to someone else (a reviewer, a supervisor, CRAN), build
+it properly. **Always use `R CMD build`, never `tar`**:
+
+```bash
+cd ..                 # the directory ABOVE the package root
+R CMD build rsDCM      # writes rsDCM_0.1.0.tar.gz
+```
+
+or from R:
+
+```r
+devtools::build()
+```
+
+`R CMD build` is what applies `.Rbuildignore` (stripping `.github/`,
+`data-raw/`, `.gitignore`, and this file), knits the vignette into
+`inst/doc/`, and includes the generated `man/*.Rd` and `data/toy_dcm.rda`.
+A hand-rolled `tar czf` does none of that.
+
+Sanity-check the result before sending it:
+
+```bash
+tar -tzf rsDCM_0.1.0.tar.gz | grep -c 'man/.*\.Rd'   # expect 45
+tar -tzf rsDCM_0.1.0.tar.gz | grep 'data/'           # expect toy_dcm.rda
+tar -tzf rsDCM_0.1.0.tar.gz | grep 'inst/doc/'       # expect the built vignette
+```
+
+The recipient installs it with:
+
+```r
+install.packages("rsDCM_0.1.0.tar.gz", repos = NULL, type = "source")
+?dcm_estimate                  # help pages should now resolve
+browseVignettes("rsDCM")
+```
+
+## Step 6: strengthen the regression test (optional but recommended)
 
 The current `test-estimate.R` only checks that estimation completes and
 returns finite values. Once you've installed and run the package once,
@@ -85,7 +154,7 @@ expect_equal(fit$Ep$A, ref_Ep$A, tolerance = 1e-4)
 
 This catches any future numerical regression.
 
-## Step 6 — CRAN submission
+## Step 6: CRAN submission
 
 1. Bump `Version:` in `DESCRIPTION` to `0.1.0` (already done).
 2. Update `NEWS.md` with the release notes.
@@ -126,9 +195,9 @@ push completes.
 | Path | Purpose |
 | --- | --- |
 | `DESCRIPTION` | Package metadata. Update `URL`/`BugReports` once the GitHub repo exists. |
-| `LICENSE`, `LICENSE.note` | GPL-2 declaration and SPM12 acknowledgment. |
-| `NAMESPACE` | Hand-written; regenerate with `devtools::document()`. |
-| `R/dcmR-package.R` | Package-level docs + `.onLoad` + `dcm_options()`. |
+| `LICENSE`, `LICENSE.note` | GPL-2 declaration and SPM25 acknowledgment. |
+| `NAMESPACE` | Generated by roxygen2; edit the tags in `R/rsDCM-package.R`, not this file. |
+| `R/rsDCM-package.R` | Package-level docs + `.onLoad` + `rsdcm_options()`. |
 | `R/utils-vec.R` | Flatten/unflatten primitives. |
 | `R/utils-matrix.R` | `dcm_inv`, `dcm_logdet`, `dcm_svd`, `dcm_cat`, ... |
 | `R/utils-misc.R` | `dcm_funcheck`, `dcm_data_id`, `dcm_Ncdf`, ... |
@@ -144,4 +213,4 @@ push completes.
 | `tests/testthat/` | Unit + smoke + estimation tests. |
 | `vignettes/introduction.Rmd` | End-to-end worked example. |
 | `inst/CITATION` | Citation entries. |
-| `man/` | Empty until `devtools::document()` runs. |
+| `man/` | Generated by `devtools::document()`; 45 `.Rd` files. Do not edit by hand. |

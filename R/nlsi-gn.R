@@ -1,6 +1,4 @@
-# =============================================================================
 # Variational Laplace / Gauss-Newton inversion (exported).
-# =============================================================================
 
 # Internal: NULL/empty fallback operator
 `%||%` <- function(a, b) if (!is.null(a) && length(a) > 0) a else b
@@ -8,7 +6,7 @@
 #' Variational Laplace inversion of a non-linear system
 #'
 #' Performs Gauss-Newton optimisation of the variational free energy for a
-#' non-linear forward model with Gaussian priors. Mirrors SPM12's
+#' non-linear forward model with Gaussian priors. Mirrors SPM25's
 #' \code{dcm_nlsi_GN}.
 #'
 #' @param M Model specification (list with \code{IS}/\code{f}/\code{g},
@@ -17,6 +15,21 @@
 #' @param Y Data (or list with \code{$y}, \code{$Q}, \code{$X0}, \code{$dt}).
 #' @return List with posterior expectation \code{Ep}, covariance \code{Cp},
 #'   log-precision estimate \code{Eh}, free energy \code{F}, and components.
+#' @details
+#' Most users should call \code{\link{dcm_estimate}} instead, which assembles
+#' \code{M}, \code{U} and \code{Y} from a DCM specification and calls this
+#' function. Use \code{dcm_nlsi_GN} directly only to invert a non-linear
+#' model that is not an fMRI DCM.
+#'
+#' Progress is reported per Gauss-Newton iteration as
+#' \code{EM:(+) k  F: ...}, where \code{(+)} marks an accepted step and
+#' \code{(-)} a rejected one. Set \code{M$noprint <- 1} to silence it.
+#' @examples
+#' # dcm_nlsi_GN is the Gauss-Newton optimiser that dcm_estimate() calls after
+#' # assembling M, U and Y from a DCM specification. For a runnable inversion
+#' # see the example in ?dcm_estimate; dcm_nlsi_GN returns the same posterior
+#' # fields (Ep, Cp, Eh, F).
+#' @seealso \code{\link{dcm_estimate}} for the user-facing entry point.
 #' @export
 dcm_nlsi_GN <- function(M, U, Y) {
   if (is.null(M$nograph)) M$nograph <- 1L
@@ -181,7 +194,7 @@ dcm_nlsi_GN <- function(M, U, Y) {
         if (!revert) break
       }
     }
-    if (revert) stop("dcmR:dcm_nlsi_GN Convergence failure.")
+    if (revert) stop("rsDCM:dcm_nlsi_GN Convergence failure.")
 
     e  <- dcm_vec(y) - dcm_vec(f_out) - dfdu %*% p[iu, , drop = FALSE]
     J  <- -cbind(dfdp, dfdu)

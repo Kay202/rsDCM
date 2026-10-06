@@ -1,0 +1,87 @@
+Resubmission
+============
+
+This is a resubmission of the initial submission of rsDCM. We thank the
+CRAN reviewer for the feedback and have addressed all four points below.
+
+
+1. "Please always write package names, software names and API names in
+    single quotes in title and description. e.g: 'MATLAB'."
+
+   Done. We added single quotes around the software names in the
+   Description field: 'MATLAB' and 'SPM25'. The Title contains no software,
+   package, or API names.
+
+
+2. "\dontrun{} should only be used if the example really cannot be
+    executed ... Please replace \dontrun with \donttest. Please unwrap the
+    examples if they are executable in < 5 sec, or replace \dontrun{} with
+    \donttest{}."
+
+   Done. No \dontrun{} remains in the package.
+
+   - dcm_estimate(): the example inverts the bundled 'toy_dcm' dataset. It
+     is executable but takes about a minute, so it is now wrapped in
+     \donttest{} rather than run on every check.
+   - dcm_nlsi_GN() (the low-level optimiser called by dcm_estimate) and
+     rsdcm_fit() (a wrapper): the original \dontrun{} blocks either
+     duplicated the dcm_estimate() inversion or required user-supplied
+     subject data files. Each is now a short comment that shows the usage
+     and points to the runnable example in ?dcm_estimate / ?rsdcm.
+   - The toy_dcm dataset help page no longer wraps an inversion in
+     \dontrun{}; it shows the data structure and points to ?dcm_estimate.
+
+   The remaining runnable examples (dcm_estimate, rsdcm) use \donttest{}
+   only because they take more than a few seconds.
+
+
+3. "Please ensure that your functions do not write by default or in your
+    examples/vignettes/tests in the user's home filespace ... Please omit
+    any default path in writing functions. In your examples/vignettes/tests
+    you can write to tempdir()."
+
+   Confirmed. No function writes to the file system by default, and no
+   writing function has a default path:
+
+   - dcm_estimate() has save = FALSE by default and, only when save = TRUE,
+     writes back to the file path the user explicitly supplied as its input.
+   - dcm_peb_of_pebs() has save_path = NULL by default and writes only when
+     the user passes an explicit save_path.
+
+   No example or vignette writes to disk. The tests write only to
+   tempdir() (via a temporary-directory helper).
+
+
+4. "You are setting options(warn=-1) in your function. This is not allowed.
+    Please rather use suppressWarnings() if really needed."
+
+   Done. We removed both occurrences of options(warn = -1) and replaced
+   them with targeted suppressWarnings() calls around the specific
+   expressions that could emit warnings.
+
+
+Test environments
+=================
+
+* Local: Windows 11, R 4.5.1
+
+[Before submitting, also run and list here: win-builder (R-devel and
+R-release) via devtools::check_win_devel() / check_win_release().]
+
+
+R CMD check results
+===================
+
+0 errors | 0 warnings | 1 note
+
+* checking CRAN incoming feasibility ... NOTE
+  Maintainer: 'Godfred Arhin <arhin0122@gmail.com>'
+  New submission
+
+This NOTE is the standard note for a first submission to CRAN.
+
+
+Downstream dependencies
+=======================
+
+There are no downstream dependencies (this is a new package).

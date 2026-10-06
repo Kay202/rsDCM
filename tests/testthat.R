@@ -1,4 +1,4 @@
 library(testthat)
-library(dcmR)
+library(rsDCM)
 
-test_check("dcmR")
+test_check("rsDCM")

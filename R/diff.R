@@ -1,12 +1,10 @@
-# =============================================================================
 # Numerical differentiation (internal). dcm_diff is a hot-path function:
 # called once per parameter direction in every Gauss-Newton iteration.
-# =============================================================================
 
 #' High-order numerical Jacobian
 #'
 #' Forward-difference numerical Jacobian of a (possibly nested-output)
-#' function with respect to one or more of its arguments. Mirrors SPM12's
+#' function with respect to one or more of its arguments. Mirrors SPM25's
 #' \code{dcm_diff}.
 #'
 #' @param ... Function, its arguments, the index (or vector of indices) of
@@ -21,9 +19,9 @@ dcm_diff <- function(...) {
   if (length(args) < 2) stop("Improper call: need at least f and one x argument")
 
   dx <- tryCatch({
-    if (exists("GLOBAL_DX", envir = .dcmR_env, inherits = FALSE) &&
-        !is.null(get("GLOBAL_DX", envir = .dcmR_env)))
-      get("GLOBAL_DX", envir = .dcmR_env)
+    if (exists("GLOBAL_DX", envir = .rsDCM_env, inherits = FALSE) &&
+        !is.null(get("GLOBAL_DX", envir = .rsDCM_env)))
+      get("GLOBAL_DX", envir = .rsDCM_env)
     else exp(-8)
   }, error = function(e) exp(-8))
 

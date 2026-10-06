@@ -1,25 +1,28 @@
-Package: dcmR
+Package: rsDCM
 Type: Package
-Title: Dynamic Causal Modelling for Functional MRI
+Title: Robust and Sparse Dynamic Causal Modelling for Functional MRI
 Version: 0.1.0
+Date: 2026-09-24
 Authors@R: c(
     person(given = "Godfred", family = "Arhin",
            email = "arhin0122@gmail.com",
-           role = c("aut", "cre")),
+           role = c("aut", "cre", "trl")),
     person(given = "Nilotpal", family = "Sanyal",
            email = "nsanyal@utep.edu",
            role = "aut"),
-    person(given = "SPM12 Authors", role = c("ctb", "cph"),
-           comment = "Original MATLAB SPM12 implementation; see LICENSE.note"))
-Description: Tools for estimating Dynamic Causal Models (DCM) for functional
-    magnetic resonance imaging (fMRI) data using variational Laplace
-    inversion (Friston et al., 2003 <doi:10.1016/S1053-8119(03)00202-7>).
-    The package provides Bayesian estimation of effective connectivity
-    among brain regions from BOLD time series, including the bilinear
-    neural state equation and the Buxton-Friston hemodynamic response
-    model. The implementation is an R port of the corresponding routines
-    in the MATLAB SPM12 toolbox, with optimizations for the integration
-    and Gauss-Newton inner loops.
+    person(given = "SPM25 Authors", role = c("ctb", "cph"),
+           comment = "Original MATLAB SPM25 (v25.01.02) implementation; see LICENSE.note"))
+Maintainer: Godfred Arhin <arhin0122@gmail.com>
+Description: Provides a robust and sparse method for group-level Dynamic
+    Causal Modelling (DCM) of functional magnetic resonance imaging (fMRI)
+    data: Student-t weighting of subjects for robustness, combined with a
+    nonlocal product-moment (pMOM) spike-and-slab prior for sparse
+    selection of group-level effects (<doi:10.48550/arXiv.2609.06379>). The package also
+    provides an R implementation of single-subject DCM for fMRI using
+    variational Laplace inversion (Friston et al., 2003
+    <doi:10.1016/S1053-8119(03)00202-7>), including the bilinear neural
+    state equation and the Buxton-Friston hemodynamic response model,
+    ported from the 'SPM25' (version 25.01.02) toolbox for 'MATLAB'.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
@@ -30,13 +33,16 @@ Imports:
     expm,
     MASS,
     methods,
-    stats
+    stats,
+    utils
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
-URL: https://github.com/Kay202/dcmR
-BugReports: https://github.com/Kay202/dcmR/issues
-RoxygenNote: 7.3.1
+    rmarkdown,
+    R.matlab,
+    withr
+URL: https://github.com/Kay202/rsDCM
+BugReports: https://github.com/Kay202/rsDCM/issues
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

@@ -1,12 +1,10 @@
-# =============================================================================
 # Bilinear reduction (M0/M1 form) and Volterra kernels (internal).
-# =============================================================================
 
 #' Bilinear reduction of a non-linear DCM
 #'
 #' Reduces a non-linear state equation to bilinear form \code{dx/dt = M0 x +
 #' sum_i u_i M1[[i]] x}, also returning the lead-field expansion. Mirrors
-#' SPM12's \code{spm_bireduce}.
+#' SPM25's \code{spm_bireduce}.
 #'
 #' @param M Model list (with \code{f}, \code{g}, \code{x}, \code{u}, ...).
 #' @param P Parameter structure.
@@ -174,7 +172,7 @@ dcm_bireduce <- function(M, P) {
 #' Volterra kernels of a bilinear system
 #'
 #' Computes the first- and second-order Volterra kernels of a bilinear
-#' system specified in M0/M1 form. Mirrors SPM12's \code{spm_kernels}.
+#' system specified in M0/M1 form. Mirrors SPM25's \code{spm_kernels}.
 #'
 #' @param ... Either \code{(M0, M1, N, dt)}, \code{(M0, M1, L1, N, dt)}, or
 #'   \code{(M0, M1, L1, L2, N, dt)}.

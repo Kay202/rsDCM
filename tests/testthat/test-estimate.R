@@ -5,9 +5,9 @@
 
 test_that("dcm_estimate runs end-to-end on toy_dcm", {
   testthat::skip_on_cran()
-  testthat::skip_if_not_installed("dcmR")
+  testthat::skip_if_not_installed("rsDCM")
 
-  data(toy_dcm, package = "dcmR")
+  data(toy_dcm, package = "rsDCM")
 
   fit <- suppressMessages(dcm_estimate(toy_dcm))
 

@@ -1,17 +1,18 @@
-dcmR — Acknowledgment of upstream sources
+rsDCM: Acknowledgment of upstream sources
 =========================================
 
-The dcmR package is an R port of routines originally implemented in the
-MATLAB SPM12 toolbox (Statistical Parametric Mapping), distributed by the
+The rsDCM package is an R port of routines originally implemented in the
+MATLAB SPM25 (version 25.01.02) toolbox (Statistical Parametric Mapping),
+distributed by the
 Wellcome Centre for Human Neuroimaging, University College London, under
 the GNU General Public License version 2 (GPL-2).
 
-The following dcmR functions are direct ports (with optimizations) of the
-corresponding SPM12 MATLAB routines. The mapping uses the dcmR convention
+The following rsDCM functions are direct ports (with optimizations) of the
+corresponding SPM25 MATLAB routines. The mapping uses the rsDCM convention
 of replacing the 'spm_' prefix with 'dcm_' (and collapsing the redundant
 'spm_dcm_' prefix to a single 'dcm_').
 
-  dcmR function              SPM12 original
+  rsDCM function              SPM25 original
   -------------              --------------
   dcm_estimate               spm_dcm_estimate
   dcm_fmri_priors            spm_dcm_fmri_priors
@@ -52,13 +53,24 @@ of replacing the 'spm_' prefix with 'dcm_' (and collapsing the redundant
   dcm_find_pC                spm_find_pC
   dcm_find_rC                spm_find_rC
   dcm_trace                  spm_trace
-  dcm_blocks_to_mat          (helper added in dcmR)
+  dcm_blocks_to_mat          (helper added in rsDCM)
+  dcm_peb_prepare            spm_dcm_peb (preparation half)
+  dcm_peb_run                spm_dcm_peb (estimation half)
+  dcm_peb_of_pebs            spm_dcm_peb (third-level orchestration)
+  dcm_peb_design             (helper added in rsDCM)
+  dcm_peb_files              (helper added in rsDCM)
+  dcm_peb_load               (helper added in rsDCM)
+
+SPM25 implements the second- and third-level PEB in the single routine
+spm_dcm_peb; rsDCM splits it into a prepare/run pair with an orchestration
+wrapper, but the numerical method (variational Laplace over the second-
+level parameters) is unchanged.
 
 The Krylov-projection helper expv() and the Pade-approximation helper
-padm() are direct ports of the corresponding SPM12 utilities and retain
+padm() are direct ports of the corresponding SPM25 utilities and retain
 their original names.
 
-We thank the SPM12 authors and the Wellcome Centre for Human Neuroimaging
+We thank the SPM25 authors and the Wellcome Centre for Human Neuroimaging
 for making the original implementation freely available under GPL-2. The
 R port inherits the GPL-2 license.
 
@@ -72,4 +84,4 @@ Friston, K.J., Mattout, J., Trujillo-Barreto, N., Ashburner, J., Penny, W.
 (2007). Variational free energy and the Laplace approximation. NeuroImage,
 34(1), 220-234.
 
-SPM12 software: https://www.fil.ion.ucl.ac.uk/spm/software/spm12/
+SPM25 software: https://www.fil.ion.ucl.ac.uk/spm/

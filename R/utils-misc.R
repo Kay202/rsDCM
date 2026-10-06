@@ -1,11 +1,9 @@
-# =============================================================================
 # Miscellaneous utilities (internal).
-# =============================================================================
 
 #' Coerce a function-like object to a function
 #'
 #' Accepts a function, a function name (as character), or a one-line body and
-#' returns a real \code{function}. Mirrors SPM12's \code{spm_funcheck}.
+#' returns a real \code{function}. Mirrors SPM25's \code{spm_funcheck}.
 #'
 #' @param f A function or character string.
 #' @return A \code{function}.
@@ -22,7 +20,7 @@ dcm_funcheck <- function(f) {
 
 #' Compute a stable identifier for a numeric structure
 #'
-#' Used by SPM12 to fingerprint a dataset; returned in the DCM result.
+#' Used by SPM25 to fingerprint a dataset; returned in the DCM result.
 #'
 #' @param ... Numeric data (any shape, possibly nested).
 #' @return Numeric scalar.
@@ -50,6 +48,12 @@ dcm_data_id <- function(...) {
 #' @param u Mean.
 #' @param v Variance.
 #' @return Numeric vector of CDF values.
+#' @examples
+#' dcm_Ncdf(0)                     # 0.5
+#' round(dcm_Ncdf(c(-1.96, 0, 1.96)), 4)
+#'
+#' # Note the third argument is a VARIANCE, not a standard deviation
+#' dcm_Ncdf(2, u = 0, v = 4)       # == pnorm(2, mean = 0, sd = 2)
 #' @keywords internal
 #' @export
 dcm_Ncdf <- function(x, u = 0, v = 1) {

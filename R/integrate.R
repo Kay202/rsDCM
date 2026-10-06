@@ -1,13 +1,11 @@
-# =============================================================================
-# Bilinear-system integrator (exported). The performance-critical function in
-# DCM estimation: called O(np) times per Gauss-Newton iteration via dcm_diff.
+# Bilinear-system integrator (exported): the performance-critical inner loop,
+# called O(np) times per Gauss-Newton iteration via dcm_diff.
 #
-# Key optimizations relative to SPM12:
-#   1. M0, M1 are densified once at the start (no per-step sparse->dense).
-#   2. expm::expm is bound directly (avoids the slower pure-R fallback).
-#   3. The propagator E_dt = expm(J*dt) is cached and reused while neither
-#      J (input change) nor dt changes. This is the dominant speedup.
-# =============================================================================
+# Key optimizations vs SPM25:
+#   1. M0, M1 densified once up front (no per-step sparse->dense).
+#   2. expm::expm bound directly (avoids the slower pure-R fallback).
+#   3. The propagator E_dt = expm(J*dt) is cached and reused while J and dt
+#      are unchanged (the dominant speedup).
 
 #' Integrate a bilinear DCM
 #'
@@ -20,6 +18,35 @@
 #'   \code{g}, \code{ns}, \code{delays}, \code{l}.
 #' @param U List with input matrix \code{u} and time step \code{dt}.
 #' @return Numeric matrix of predicted observations (rows = samples).
+#' @details
+#' \code{M$f} and \code{M$g} may be given as functions or as the names of
+#' functions. \code{M$n} must be the length of the flattened state
+#' (\code{length(dcm_vec(M$x))}, i.e. regions x hidden states), while
+#' \code{M$l} is the number of observed outputs (regions) and \code{M$m}
+#' the number of inputs.
+#' @examples
+#' # Simulate the BOLD response of a two-region model to a boxcar input.
+#' n <- 2L
+#' pri <- dcm_fmri_priors(A = matrix(1, n, n),
+#'                        B = array(0, c(n, n, 1)),
+#'                        C = matrix(c(1, 0), n, 1),
+#'                        D = array(0, c(n, n, 0)),
+#'                        options = list())
+#'
+#' U <- list(u = matrix(c(rep(1, 16), rep(0, 16)), ncol = 1), dt = 1)
+#' M <- list(f = "dcm_fx_fmri", g = "dcm_gx_fmri", x = pri$x,
+#'           m = ncol(U$u), n = length(pri$x), l = nrow(pri$x), ns = 32)
+#'
+#' # The priors put C at zero, so start from them and switch on a driving
+#' # input to region 1 and a connection from region 1 to region 2.
+#' P <- pri$pE
+#' P$C[1, 1] <- 1
+#' P$A[2, 1] <- 0.4
+#'
+#' y <- dcm_int(P, M, U)
+#' dim(y)                  # 32 samples x 2 regions
+#' round(y[seq(1, 32, 4), ], 3)
+#' @seealso \code{\link{dcm_estimate}}, which calls this as its forward model.
 #' @export
 dcm_int <- function(P, M, U) {
   if (!is.list(U)) U <- list(u = U)

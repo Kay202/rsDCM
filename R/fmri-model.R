@@ -1,7 +1,4 @@
-# =============================================================================
-# fMRI generative model: neural state equation, hemodynamic observation
-# equation, prior construction, and the mode generator.
-# =============================================================================
+# fMRI generative model: state equation, observation equation, priors, modes.
 
 #' Logistic sigmoid
 #'
@@ -16,7 +13,7 @@ dcm_phi <- function(x) 1 / (1 + exp(-x))
 #' DCM mode generator
 #'
 #' Maps a vector of mode parameters to a connectivity matrix. Mirrors
-#' SPM12's \code{spm_dcm_fmri_mode_gen}.
+#' SPM25's \code{spm_dcm_fmri_mode_gen}.
 #'
 #' @param Ev Numeric vector of mode parameters.
 #' @param modes Numeric matrix of mode columns.
@@ -49,7 +46,7 @@ dcm_fmri_mode_gen <- function(Ev, modes, Cv = NULL) {
 #' fMRI neural and hemodynamic state equation
 #'
 #' Computes \code{dx/dt} for the bilinear neural state equation coupled to
-#' the Buxton-Friston hemodynamic model. Mirrors SPM12's \code{spm_fx_fmri}.
+#' the Buxton-Friston hemodynamic model. Mirrors SPM25's \code{spm_fx_fmri}.
 #'
 #' @param x State matrix (rows = regions, cols = state variables).
 #' @param u Driving inputs at the current time.
@@ -127,7 +124,7 @@ dcm_fx_fmri <- function(x, u, P, M) {
 #' fMRI state equation with analytic Jacobians
 #'
 #' Same as \code{\link{dcm_fx_fmri}} but additionally returns analytic
-#' Jacobians \code{dfdx} and \code{dfdu}. Mirrors SPM12's \code{spm_fx_fmri}
+#' Jacobians \code{dfdx} and \code{dfdu}. Mirrors SPM25's \code{spm_fx_fmri}
 #' when called with \code{nargout > 1}.
 #'
 #' @inheritParams dcm_fx_fmri
@@ -278,7 +275,7 @@ dcm_fx_fmri2 <- function(x, u, P, M) {
 #' fMRI BOLD observation equation
 #'
 #' Computes the BOLD signal from the hemodynamic state variables. Mirrors
-#' SPM12's \code{spm_gx_fmri}.
+#' SPM25's \code{spm_gx_fmri}.
 #'
 #' @inheritParams dcm_fx_fmri
 #' @return List with the BOLD prediction \code{g} and Jacobian \code{dgdx}.
@@ -305,8 +302,7 @@ dcm_gx_fmri <- function(x, u, P, M) {
 #' Construct fMRI DCM priors
 #'
 #' Builds the prior expectations \code{pE} and prior covariance \code{pC}
-#' for a deterministic, two-state, or stochastic fMRI DCM. Mirrors SPM12's
-#' \code{dcm_fmri_priors}.
+#' for a deterministic fMRI DCM. Mirrors SPM25's \code{dcm_fmri_priors}.
 #'
 #' @param A Connectivity adjacency matrix.
 #' @param B Modulatory adjacency array.
@@ -316,6 +312,21 @@ dcm_gx_fmri <- function(x, u, P, M) {
 #'   \code{two_state}, \code{backwards}, \code{precision}, \code{decay}).
 #' @return List with \code{pE} (prior expectation), \code{x} (initial state
 #'   template), and \code{pC} (prior covariance).
+#' @section Model variants:
+#' Only the deterministic, single-state model is supported end-to-end in this
+#' release. Branches for the two-state (\code{options$two_state}) and spectral
+#' (\code{options$induced}) variants exist but are experimental and are not
+#' wired through \code{\link{dcm_estimate}}, which rejects them. They are
+#' planned for a future update.
+#' @examples
+#' # Priors for the bundled three-region (deterministic) model
+#' data(toy_dcm)
+#' pr <- dcm_fmri_priors(toy_dcm$a, toy_dcm$b, toy_dcm$c,
+#'                       D = NULL, options = toy_dcm$options)
+#' names(pr)
+#' pr$pE$A          # prior expectation of the endogenous connections
+#' dim(pr$x)        # 3 regions x 5 hemodynamic states
+#' @seealso \code{\link{dcm_estimate}}, which builds these priors for you.
 #' @export
 dcm_fmri_priors <- function(A, B, C, D, options = list()) {
   A_in <- A; B_in <- B; C_in <- C; D_in <- D
