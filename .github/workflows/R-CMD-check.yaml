@@ -7,15 +7,8 @@
 #   - ubuntu-latest   R-release
 #   - ubuntu-latest   R-oldrel-1
 #
-# Two pre-check steps make the workflow self-contained:
-#   1. Generates data/toy_dcm.rda from data-raw/ (so the regression test
-#      can find the dataset even if the .rda hasn't been committed).
-#   2. Runs roxygen2::roxygenise() to populate man/ and refresh NAMESPACE
-#      from the source comments (so the check sees up-to-date docs even
-#      if devtools::document() wasn't run locally before pushing).
-#
-# Once you're routinely committing the generated artifacts yourself,
-# you can remove those two steps to make CI strictly verify the repo.
+# The generated artifacts (man/, NAMESPACE, data/*.rda) are committed, so
+# CI checks the repository as-is.
 
 on:
   push:
@@ -58,16 +51,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, any::roxygen2
+          extra-packages: any::rcmdcheck
           needs: check
-
-      - name: Generate toy dataset (idempotent)
-        run: Rscript data-raw/make-toy-dcm.R
-        shell: bash
-
-      - name: Refresh roxygen documentation
-        run: Rscript -e "roxygen2::roxygenise()"
-        shell: bash
 
       - uses: r-lib/actions/check-r-package@v2
         with:
