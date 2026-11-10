@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rsDCM</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -58,58 +58,29 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.1.0" id="rsdcm-010">rsDCM 0.1.0<a class="anchor" aria-label="anchor" href="#rsdcm-010"></a></h2>
-<p>First release.</p>
+<h2 class="page-header" data-toc-text="0.2.0" id="rsdcm-020">rsDCM 0.2.0<a class="anchor" aria-label="anchor" href="#rsdcm-020"></a></h2>
 <div class="section level3">
-<h3 id="robust-and-sparse-group-level-dcm-0-1-0">Robust and sparse group-level DCM<a class="anchor" aria-label="anchor" href="#robust-and-sparse-group-level-dcm-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/rsdcm.html">rsdcm()</a></code> fits a robust, sparse group-level model to subject-level DCM parameters: Student-t weighting of subjects for robustness to outliers, a nonlocal product-moment (pMOM) spike-and-slab prior for sparse selection of group effects, and ReML-estimated between-subject variance components. It returns the group effects, their posterior inclusion probabilities, the per-subject robustness weights, and the learned spike/slab scales. See &lt;arXiv:2609.06379&gt;.</li>
-<li>
-<code><a href="../reference/rsdcm_fit.html">rsdcm_fit()</a></code> is a convenience wrapper that assembles the inputs from a list of <code><a href="../reference/dcm_estimate.html">dcm_estimate()</a></code> fits (the posterior <code>Ep</code>/<code>Cp</code> restricted to a chosen parameter field) and a between-subject design.</li>
-<li>
-<code>narps_dcm</code>: subject-level DCM summaries for 48 subjects (with group/gender/age covariates), derived from the openly shared NARPS dataset. It is the runnable real-data example for <code><a href="../reference/rsdcm.html">rsdcm()</a></code>.</li>
-<li>Progress is reported via <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code> and is silenceable, matching the rest of the package.</li>
+<h3 id="robust-and-sparse-group-inference-0-2-0">Robust and sparse group inference<a class="anchor" aria-label="anchor" href="#robust-and-sparse-group-inference-0-2-0"></a></h3>
+<ul><li>Replaced mode-only inclusion summaries with integrated posterior inclusion probabilities estimated by a registered C++ parallel-tempering sampler.</li>
+<li>Added batch-means Monte Carlo standard errors, chain-specific PIPs, acceptance rates, swap rates, and maximum between-chain PIP ranges.</li>
+<li>Reworked mode fitting as a multistart generalized EM algorithm with conditional maximization, monotonicity safeguards, stationarity checks, and an <code><a href="https://rdrr.io/r/stats/nlminb.html" class="external-link">nlminb()</a></code> fallback for covariance-component optimization.</li>
+<li>Added conditional Laplace covariance matrices and standard deviations for group coefficients.</li>
+<li>Added selectable precision-Cholesky, covariance-Cholesky, and symmetric whitening implementations. Returned weights are explicitly identified as whitening-coordinate diagnostics.</li>
+<li>Fixed the residual scale by default for scale identification and added an opt-in free-scale mode with a warning.</li>
+<li>Added diagnostics for multistart convergence, objectives, Q-function monotonicity, and fitted covariance components.</li>
+<li>Replaced the bundled preliminary NARPS summaries with corrected within- subject PEB summaries for the same 48 participants.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="dynamic-causal-modelling-for-fmri-r-port-of-spm25-0-1-0">Dynamic Causal Modelling for fMRI (R port of SPM25)<a class="anchor" aria-label="anchor" href="#dynamic-causal-modelling-for-fmri-r-port-of-spm25-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/dcm_estimate.html">dcm_estimate()</a></code>, <code><a href="../reference/dcm_nlsi_GN.html">dcm_nlsi_GN()</a></code>, <code><a href="../reference/dcm_int.html">dcm_int()</a></code> ported from SPM25 with optimizations: propagator caching in the bilinear integrator, identity-projection fast path in <code><a href="../reference/dcm_diff.html">dcm_diff()</a></code>, diagonal fast paths in <code><a href="../reference/dcm_inv.html">dcm_inv()</a></code> / <code><a href="../reference/dcm_logdet.html">dcm_logdet()</a></code>. Roughly 20x faster end-to-end than a literal port on representative DCMs.</li>
-<li>
-<code>toy_dcm</code> dataset (three regions, 482 scans) for documentation, smoke-testing, and examples.</li>
-<li>Vignette <code>introduction</code> with a worked end-to-end example.</li>
-<li>Help pages for all exported functions.</li>
+<h3 id="package-organization-0-2-0">Package organization<a class="anchor" aria-label="anchor" href="#package-organization-0-2-0"></a></h3>
+<ul><li>Consolidated the novel method in <code>R/rsDCM.R</code>.</li>
+<li>Consolidated MATLAB-ported DCM and PEB functions in <code>R/DCM.R</code>.</li>
+<li>Moved the C++ sampler to the standard <code>src/</code> directory with registered native routines.</li>
+<li>Updated manuals, examples, tests, citation information, and the vignette.</li>
 </ul></div>
-<div class="section level3">
-<h3 id="parametric-empirical-bayes-peb-0-1-0">Parametric Empirical Bayes (PEB)<a class="anchor" aria-label="anchor" href="#parametric-empirical-bayes-peb-0-1-0"></a></h3>
-<ul><li>Hierarchical (group-level) modelling of DCM parameters across subjects, ported from SPM25’s <code>spm_dcm_peb</code>:
-<ul><li>
-<code><a href="../reference/dcm_peb_prepare.html">dcm_peb_prepare()</a></code> / <code><a href="../reference/dcm_peb_run.html">dcm_peb_run()</a></code>: prepare and fit a second- or third-level PEB by variational Laplace.</li>
-<li>
-<code><a href="../reference/dcm_peb_of_pebs.html">dcm_peb_of_pebs()</a></code>: third-level PEB-of-PEBs over a directory of subject PEBs, with a between-subject design.</li>
-<li>
-<code><a href="../reference/dcm_peb_design.html">dcm_peb_design()</a></code>: build the group-level design matrix.</li>
-<li>
-<code><a href="../reference/dcm_peb_files.html">dcm_peb_files()</a></code> / <code><a href="../reference/dcm_peb_load.html">dcm_peb_load()</a></code>: locate and load subject PEBs from <code>.rds</code> or MATLAB <code>.mat</code> files (<code>.mat</code> needs the suggested <code>R.matlab</code> package).</li>
-</ul></li>
-<li>
-<code><a href="../reference/dcm_peb_of_pebs.html">dcm_peb_of_pebs()</a></code> does not write to disk unless a <code>save_path</code> is supplied.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="naming-0-1-0">Naming<a class="anchor" aria-label="anchor" href="#naming-0-1-0"></a></h3>
-<p>Ported SPM routines keep the <code>dcm_</code> prefix (from <code>spm_</code>), to avoid colliding with an installed SPM-derived package and to make it obvious which functions come from here: <code>spm_dcm_estimate</code> becomes <code>dcm_estimate</code>, <code>spm_nlsi_GN</code> becomes <code>dcm_nlsi_GN</code>, <code>spm_int</code> becomes <code>dcm_int</code>, and so on.</p>
 </div>
-<div class="section level3">
-<h3 id="supported-model-variants-0-1-0">Supported model variants<a class="anchor" aria-label="anchor" href="#supported-model-variants-0-1-0"></a></h3>
-<ul><li>This release implements only the <strong>deterministic, single-state</strong> fMRI DCM (non-linear DCM, via a non-empty <code>d</code> array, is also supported).</li>
-<li>The <strong>two-state</strong>, <strong>stochastic</strong>, and <strong>spectral / cross-spectral-density (<code>induced</code>)</strong> variants are not yet implemented. <code><a href="../reference/dcm_estimate.html">dcm_estimate()</a></code> <strong>stops with an informative error</strong> if any of these options is switched on, instead of silently running the deterministic model. They are planned for a future update.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="behavioural-changes-vs-the-matlab-original-0-1-0">Behavioural changes vs. the MATLAB original<a class="anchor" aria-label="anchor" href="#behavioural-changes-vs-the-matlab-original-0-1-0"></a></h3>
-<ul><li>Progress messages from <code><a href="../reference/dcm_nlsi_GN.html">dcm_nlsi_GN()</a></code> use <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code> and can be silenced with <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>.</li>
-<li>
-<code><a href="../reference/dcm_estimate.html">dcm_estimate()</a></code> does not write to disk by default. Pass <code>save = TRUE</code> together with a file path to recover the SPM25 behaviour.</li>
-<li>The previous <code>.spm_env</code> global is replaced by a package-internal environment whose mutable settings are exposed through <code><a href="../reference/rsdcm_options.html">rsdcm_options()</a></code>.</li>
-</ul></div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.1.0" id="rsdcm-010">rsDCM 0.1.0<small>2026-10-06</small><a class="anchor" aria-label="anchor" href="#rsdcm-010"></a></h2>
+<p>Initial release.</p>
 </div>
   </div>
 
@@ -125,7 +96,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer></div>

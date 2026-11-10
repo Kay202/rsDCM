@@ -37,7 +37,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rsDCM</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -95,22 +95,75 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>rsDCM</code> is an R port of the Dynamic Causal Modelling (DCM)
-routines from the MATLAB SPM25 toolbox. It estimates effective
-connectivity among brain regions from fMRI BOLD time series using
-variational Laplace inversion (Friston et al., 2003).</p>
-<p>This vignette walks through a minimal end-to-end example using the
-<code>toy_dcm</code> dataset shipped with the package.</p>
+<p><code>rsDCM</code> has two related components. The novel group method
+performs robust and sparse inference from subject-specific DCM posterior
+summaries. The MATLAB- ported component provides deterministic
+single-state fMRI DCM inversion and Gaussian Parametric Empirical Bayes
+routines based on SPM25.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kay202.github.io/rsDCM/" class="external-link">rsDCM</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kay202.github.io/rsDCM/" class="external-link">rsDCM</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; rsDCM loaded: robust and sparse group dynamic causal modeling.</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="the-toy-model">The toy model<a class="anchor" aria-label="anchor" href="#the-toy-model"></a>
+<h2 id="robust-and-sparse-group-inference">Robust and sparse group inference<a class="anchor" aria-label="anchor" href="#robust-and-sparse-group-inference"></a>
 </h2>
-<p>The package includes a three-region, 482-scan DCM with a single
-driving input, derived from the fMRI data of Valério et al. (2025)
-during package development (see <code><a href="../reference/toy_dcm.html">?toy_dcm</a></code>).</p>
+<p>For participant
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>,
+the group method receives a first-level posterior mean and covariance.
+It combines the latter with a between-subject covariance and pre-whitens
+the resulting block. A Student-t likelihood then downweights atypical
+residual coordinates in the chosen whitening basis. A Gaussian-spike and
+nonlocal pMOM-slab prior separates negligible from supported group
+effects.</p>
+<p>The mode-fitting stage is a multistart generalized EM algorithm with
+conditional maximization. After the empirical-Bayes mode and
+hyperparameters are selected, parallel-tempering MCMC integrates the
+coefficient-level slab responsibilities. This produces posterior
+inclusion probabilities and Monte Carlo standard errors. The fit also
+returns conditional Laplace standard deviations at the selected
+mode.</p>
+<p>The bundled <code>narps_dcm</code> data contain corrected posterior
+summaries for 48 participants and 22 connectivity parameters.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 48 22</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">Cp</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 48</span></span></code></pre></div>
+<p>The following code constructs an intercept-only design and a diagonal
+between-subject covariance basis. It is not evaluated while building the
+vignette because the parallel-tempering calculation is intentionally
+substantial.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span><span class="op">)</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span><span class="op">)</span></span>
+<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">N</span>, <span class="fl">1</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="st">"intercept"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">V</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span>, <span class="va">p</span><span class="op">)</span></span>
+<span>  <span class="va">z</span><span class="op">[</span><span class="va">j</span>, <span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">z</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rsdcm.html">rsdcm</a></span><span class="op">(</span></span>
+<span>  <span class="va">narps_dcm</span><span class="op">$</span><span class="va">eta</span>, <span class="va">narps_dcm</span><span class="op">$</span><span class="va">Cp</span>, <span class="va">X</span>, <span class="va">V</span>,</span>
+<span>  nu <span class="op">=</span> <span class="fl">3</span>, pi <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  start_seed <span class="op">=</span> <span class="fl">1</span>, pip_mcmc_seed <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="op">)</span>  <span class="co"># takes ~3 mins in macOS 26.6.2 </span></span>
+<span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">beta_mat</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">beta_sd_approx</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">inclusion</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">inclusion_mcse</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">pip_max_chain_range</span></span></code></pre></div>
+<p>The displayed <code>pi</code> is an example setting. New studies
+should tune hyperparameters independently of the data used for
+evaluation.</p>
+</div>
+<div class="section level2">
+<h2 id="single-subject-dcm">Single-subject DCM<a class="anchor" aria-label="anchor" href="#single-subject-dcm"></a>
+</h2>
+<p>The package also includes a three-region DCM specification.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">toy_dcm</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">toy_dcm</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
@@ -124,159 +177,32 @@ during package development (see <code><a href="../reference/toy_dcm.html">?toy_d
 <span><span class="co">#&gt;  $ b      : num [1:3, 1:3, 1] 0 0 0 1 0 0 0 1 0</span></span>
 <span><span class="co">#&gt;  $ c      : num [1:3, 1] 0 0 1</span></span>
 <span><span class="co">#&gt;  $ options:List of 10</span></span>
-<span><span class="co">#&gt;  $ TE     : num 0.04</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>regions <span class="op">=</span> <span class="va">toy_dcm</span><span class="op">$</span><span class="va">n</span>, scans <span class="op">=</span> <span class="va">toy_dcm</span><span class="op">$</span><span class="va">v</span><span class="op">)</span></span>
-<span><span class="co">#&gt; regions   scans </span></span>
-<span><span class="co">#&gt;       3     482</span></span></code></pre></div>
-<p>The structure follows the SPM25 convention:</p>
-<ul>
-<li>
-<code>a</code>, <code>b</code>, <code>c</code> are the connectivity
-/ modulatory / driving adjacency arrays. (A fourth array,
-<code>d</code>, specifies non-linear connections; this model is
-deterministic, so it has none.)</li>
-<li>
-<code>Y$y</code> is the BOLD data (rows = scans, columns =
-regions).</li>
-<li>
-<code>U$u</code> is the input design at the microtime
-resolution.</li>
-<li>
-<code>options</code> controls the model variant (deterministic,
-two-state, etc.).</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="simulating-a-bold-response">Simulating a BOLD response<a class="anchor" aria-label="anchor" href="#simulating-a-bold-response"></a>
-</h2>
-<p>Before inverting anything, look at the forward model on its own.
-<code>dcm_int</code> integrates a model and returns the predicted BOLD,
-and it is fast enough to run here. We build priors for a two-region
-model, then switch on a driving input to region 1 and a connection from
-region 1 to region 2:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n</span>   <span class="op">&lt;-</span> <span class="fl">2L</span></span>
-<span><span class="va">pri</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dcm_fmri_priors.html">dcm_fmri_priors</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n</span>, <span class="va">n</span><span class="op">)</span>,</span>
-<span>                       B <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">array</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">n</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                       C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, <span class="va">n</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>                       D <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">array</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">n</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                       options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">U</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">16</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">16</span><span class="op">)</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, dt <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">M</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>f <span class="op">=</span> <span class="st">"dcm_fx_fmri"</span>, g <span class="op">=</span> <span class="st">"dcm_gx_fmri"</span>, x <span class="op">=</span> <span class="va">pri</span><span class="op">$</span><span class="va">x</span>,</span>
-<span>          m <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">U</span><span class="op">$</span><span class="va">u</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pri</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, l <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pri</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, ns <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">P</span> <span class="op">&lt;-</span> <span class="va">pri</span><span class="op">$</span><span class="va">pE</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">C</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>     <span class="co"># input drives region 1</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">A</span><span class="op">[</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0.4</span>   <span class="co"># region 1 -&gt; region 2</span></span>
-<span></span>
-<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dcm_int.html">dcm_int</a></span><span class="op">(</span><span class="va">P</span>, <span class="va">M</span>, <span class="va">U</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/matplot.html" class="external-link">matplot</a></span><span class="op">(</span><span class="va">y</span>, type <span class="op">=</span> <span class="st">"l"</span>, lty <span class="op">=</span> <span class="fl">1</span>, xlab <span class="op">=</span> <span class="st">"scan"</span>, ylab <span class="op">=</span> <span class="st">"BOLD"</span>,</span>
-<span>        main <span class="op">=</span> <span class="st">"Simulated response to a boxcar input"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region 1"</span>, <span class="st">"region 2"</span><span class="op">)</span>, lty <span class="op">=</span> <span class="fl">1</span>, col <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, bty <span class="op">=</span> <span class="st">"n"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="introduction_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" alt="Simulated BOLD response of two regions to a boxcar input" width="576"></p>
-<p>Region 2 responds only because of the <code>A[2, 1]</code>
-connection. That coupling is what the inversion below recovers.</p>
-</div>
-<div class="section level2">
-<h2 id="inverting-the-model">Inverting the model<a class="anchor" aria-label="anchor" href="#inverting-the-model"></a>
-</h2>
-<p>Inverting <code>toy_dcm</code> runs the full Gauss-Newton loop and
-takes roughly 75 seconds, so it is not evaluated when this vignette is
-built. Run it yourself to reproduce the output shown below.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dcm_estimate.html">dcm_estimate</a></span><span class="op">(</span><span class="va">toy_dcm</span><span class="op">)</span></span></code></pre></div>
-<p><code>dcm_estimate</code> returns the input DCM augmented with
-posterior fields:</p>
-<ul>
-<li>
-<code>Ep</code>: posterior expectation of the parameters (same shape
-as the prior).</li>
-<li>
-<code>Cp</code>: posterior covariance.</li>
-<li>
-<code>F</code>: variational free energy (the log-evidence proxy used
-for model comparison).</li>
-<li>
-<code>y</code>, <code>R</code>: predicted BOLD and residuals.</li>
-</ul>
+<span><span class="co">#&gt;  $ TE     : num 0.04</span></span></code></pre></div>
+<p>Full inversion can be run as follows. It is not evaluated during
+vignette building because it is computationally expensive.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Ep</span><span class="op">$</span><span class="va">A</span>, <span class="fl">3</span><span class="op">)</span>   <span class="co"># estimated connectivity</span></span>
-<span><span class="va">fit</span><span class="op">$</span><span class="cn">F</span>                <span class="co"># log-evidence</span></span></code></pre></div>
-<p>By default progress messages are emitted via <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code>;
-suppress them with <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code> if you are
-scripting.</p>
+<code class="sourceCode R"><span><span class="va">dcm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dcm_estimate.html">dcm_estimate</a></span><span class="op">(</span><span class="va">toy_dcm</span><span class="op">)</span>  <span class="co"># takes ~1 min in macOS 26.6.2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dcm_fit</span><span class="op">$</span><span class="va">Ep</span><span class="op">$</span><span class="va">A</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">dcm_fit</span><span class="op">$</span><span class="cn">F</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="model-comparison">Model comparison<a class="anchor" aria-label="anchor" href="#model-comparison"></a>
+<h2 id="reproducibility">Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility"></a>
 </h2>
-<p>For nested model comparison (Bayesian model reduction), use
-<code>dcm_log_evidence</code> with the original posterior and the
-reduced prior. For an approximate AIC / BIC summary of a single fit, use
-<code>dcm_evidence</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ev</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dcm_evidence.html">dcm_evidence</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="va">ev</span><span class="op">$</span><span class="va">aic_overall</span></span>
-<span><span class="va">ev</span><span class="op">$</span><span class="va">bic_overall</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="tuning">Tuning<a class="anchor" aria-label="anchor" href="#tuning"></a>
-</h2>
-<p>The finite-difference step used by the numerical Jacobian is exposed
-via <code><a href="../reference/rsdcm_options.html">rsdcm_options()</a></code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/rsdcm_options.html">rsdcm_options</a></span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">GLOBAL_DX</span></span>
-<span><span class="co">#&gt; [1] 0.0003354626</span></span></code></pre></div>
-<p>The default <code>exp(-8)</code> is what SPM25 uses; widen it
-(e.g. <code>1e-4</code>) if you observe numerical issues with very flat
-regions of the likelihood.</p>
-</div>
-<div class="section level2">
-<h2 id="group-level-modelling">Group-level modelling<a class="anchor" aria-label="anchor" href="#group-level-modelling"></a>
-</h2>
-<p>The package’s main method, <code><a href="../reference/rsdcm.html">rsdcm()</a></code>, fits a robust and
-sparse group-level model to subject-level DCM estimates: Student-t
-weighting of subjects, a nonlocal product-moment (pMOM) spike-and-slab
-prior for sparse selection of group effects, and ReML variance
-components (Arhin and Sanyal, 2026). It ships <code>narps_dcm</code>, a
-48-subject example derived from the openly shared NARPS dataset
-(Botvinik-Nezer et al., 2020); see <code><a href="../reference/rsdcm.html">?rsdcm</a></code> for a runnable
-example.</p>
-</div>
-<div class="section level2">
-<h2 id="acknowledgment">Acknowledgment<a class="anchor" aria-label="anchor" href="#acknowledgment"></a>
-</h2>
-<p><code>rsDCM</code> is a derivative work of the MATLAB SPM25 toolbox,
-distributed under GPL-2 by the Wellcome Centre for Human Neuroimaging.
-See the <code>LICENSE.note</code> file in the package source for the
-list of ported routines.</p>
+<p>For stochastic PIP integration, set both <code>start_seed</code> and
+<code>pip_mcmc_seed</code>. Inspect <code>converged</code>,
+<code>objective_monotone</code>, <code>q_monotone</code>,
+<code>multi_start_summary</code>, <code>inclusion_mcse</code>,
+<code>pip_swap_acceptance</code>, and <code>pip_max_chain_range</code>
+before interpreting a fit.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<ul>
-<li>Arhin, G., Sanyal, N. (2026). Robust and sparse group dynamic causal
-modeling via Student-t parametric empirical Bayes and nonlocal priors.
-arXiv:2609.06379. <a href="https://doi.org/10.48550/arXiv.2609.06379" class="external-link uri">https://doi.org/10.48550/arXiv.2609.06379</a>
-</li>
-<li>Botvinik-Nezer, R., Holzmeister, F., Camerer, C.F., et al. (2020).
-Variability in the analysis of a single neuroimaging dataset by many
-teams. <em>Nature</em>, <strong>582</strong>(7810), 84-88. <a href="https://doi.org/10.1038/s41586-020-2314-9" class="external-link uri">https://doi.org/10.1038/s41586-020-2314-9</a>
-</li>
-<li>Friston, K.J., Harrison, L., Penny, W. (2003). Dynamic causal
-modelling. <em>NeuroImage</em>, <strong>19</strong>(4), 1273-1302. <a href="https://doi.org/10.1016/S1053-8119(03)00202-7" class="external-link uri">https://doi.org/10.1016/S1053-8119(03)00202-7</a>
-</li>
-<li>Friston, K.J., Mattout, J., Trujillo-Barreto, N., Ashburner, J.,
-Penny, W. (2007). Variational free energy and the Laplace approximation.
-<em>NeuroImage</em>, <strong>34</strong>(1), 220-234. <a href="https://doi.org/10.1016/j.neuroimage.2006.08.035" class="external-link uri">https://doi.org/10.1016/j.neuroimage.2006.08.035</a>
-</li>
-<li>Valério, D., Peres, A., Bergström, F., Seidel, P., Almeida, J.
-(2025). Neural and behavioral similarity-driven tuning curves for
-manipulable objects. <em>Imaging Neuroscience</em>, <strong>3</strong>.
-<a href="https://doi.org/10.1162/imag_a_00482" class="external-link uri">https://doi.org/10.1162/imag_a_00482</a>
-</li>
-</ul>
+<p>Arhin, G. and Sanyal, N. (2026). Robust and Sparse Group Dynamic
+Causal Modeling via Student-t Parametric Empirical Bayes and Nonlocal
+Priors. <a href="https://doi.org/10.48550/arXiv.2609.06379" class="external-link uri">https://doi.org/10.48550/arXiv.2609.06379</a></p>
+<p>Friston, K. J., Harrison, L., and Penny, W. (2003). Dynamic causal
+modelling. <em>NeuroImage</em>, 19(4), 1273–1302. <a href="https://doi.org/10.1016/S1053-8119(03)00202-7" class="external-link uri">https://doi.org/10.1016/S1053-8119(03)00202-7</a></p>
 </div>
   </div>
 
@@ -295,7 +221,7 @@ manipulable objects. <em>Imaging Neuroscience</em>, <strong>3</strong>.
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer>
