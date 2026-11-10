@@ -1,8 +1,8 @@
 Package: rsDCM
 Type: Package
 Title: Robust and Sparse Dynamic Causal Modelling for Functional MRI
-Version: 0.1.0
-Date: 2026-09-24
+Version: 0.2.0
+Date: 2026-11-08
 Authors@R: c(
     person(given = "Godfred", family = "Arhin",
            email = "arhin0122@gmail.com",
@@ -13,36 +13,29 @@ Authors@R: c(
     person(given = "SPM25 Authors", role = c("ctb", "cph"),
            comment = "Original MATLAB SPM25 (v25.01.02) implementation; see LICENSE.note"))
 Maintainer: Godfred Arhin <arhin0122@gmail.com>
-Description: Provides a robust and sparse method for group-level Dynamic
-    Causal Modelling (DCM) of functional magnetic resonance imaging (fMRI)
-    data: Student-t weighting of subjects for robustness, combined with a
-    nonlocal product-moment (pMOM) spike-and-slab prior for sparse
-    selection of group-level effects (<doi:10.48550/arXiv.2609.06379>). The package also
-    provides an R implementation of single-subject DCM for fMRI using
-    variational Laplace inversion (Friston et al., 2003
-    <doi:10.1016/S1053-8119(03)00202-7>), including the bilinear neural
-    state equation and the Buxton-Friston hemodynamic response model,
-    ported from the 'SPM25' (version 25.01.02) toolbox for 'MATLAB'.
+Description: Fits robust and sparse group-level Dynamic Causal Models (DCMs)
+    for functional magnetic resonance imaging data. The group method combines
+    a Student-t likelihood with a Gaussian-spike and nonlocal product-moment
+    slab prior, propagates first-level posterior covariance through block
+    pre-whitening, fits empirical-Bayes modes by multistart generalized
+    expectation-maximization with conditional maximization, and integrates
+    posterior inclusion probabilities by parallel-tempering Monte Carlo
+    (<doi:10.48550/arXiv.2609.06379>). The package also provides an R port of
+    deterministic single-state DCM and Parametric Empirical Bayes routines
+    from 'SPM25' (version 25.01.02), based on Friston et al. (2003)
+    <doi:10.1016/S1053-8119(03)00202-7>.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Depends:
-    R (>= 4.0.0)
-Imports:
-    Matrix,
-    expm,
-    MASS,
-    methods,
-    stats,
-    utils
-Suggests:
-    testthat (>= 3.0.0),
-    knitr,
-    rmarkdown,
-    R.matlab,
-    withr
-URL: https://github.com/Kay202/rsDCM
+LazyDataCompression: xz
+Depends: R (>= 4.0.0)
+Imports: Matrix, Rcpp, expm, MASS, methods, stats, utils
+LinkingTo: Rcpp
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown, R.matlab, withr
+URL: https://kay202.github.io/rsDCM/
 BugReports: https://github.com/Kay202/rsDCM/issues
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 7.3.3
+NeedsCompilation: yes
+RoxygenNote: 7.3.3

@@ -6,3 +6,9 @@
 inst/doc
 doc/
 Meta/
+.Rbuildignore
+
+# compiled objects
+*.o
+*.so
+*.dll

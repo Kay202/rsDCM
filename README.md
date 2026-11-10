@@ -1,119 +1,102 @@
-# rsDCM
+
+<img src="man/figures/logo.png" align="right" style="float:right; height:120px;" />
+
+# rsDCM: Robust and Sparse Dynamic Causal Modelling for Functional MRI
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/rsDCM)](https://CRAN.R-project.org/package=rsDCM)
 [![R-CMD-check](https://github.com/Kay202/rsDCM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Kay202/rsDCM/actions/workflows/R-CMD-check.yaml)
+[![CodeFactor](https://www.codefactor.io/repository/github/Kay202/rsDCM/badge)](https://www.codefactor.io/repository/github/Kay202/rsDCM)
+[![](http://cranlogs.r-pkg.org/badges/grand-total/rsDCM)](https://cran.r-project.org/package=rsDCM)
 <!-- badges: end -->
 
-`rsDCM` is an R package for Dynamic Causal Modelling (DCM) of functional
-MRI data. It is an R port of the corresponding routines in the MATLAB
-SPM25 toolbox, with optimizations for the integration and Gauss-Newton
-inner loops.
+`rsDCM` provides robust and sparse group inference for Dynamic Causal
+Modelling (DCM) and an R port of deterministic single-state fMRI DCM and
+Parametric Empirical Bayes routines from SPM25.
+
+The group method combines:
+
+- a Student-t likelihood after block-covariance pre-whitening
+- a Gaussian-spike and nonlocal product-moment (pMOM)-slab prior
+- multistart generalized EM with conditional maximization
+- parallel-tempering integration of posterior inclusion probabilities
+- conditional Laplace standard deviations for group coefficients
+
+Student-t weights describe atypical residual coordinates in the selected
+whitening basis. They should not be interpreted as invariant whole-subject
+weights.
 
 ## Installation
 
-From GitHub (development version):
+Install the released version from CRAN:
+
+```r
+install.packages("rsDCM")
+```
+
+Install the development version from GitHub:
 
 ```r
 # install.packages("remotes")
 remotes::install_github("Kay202/rsDCM")
 ```
 
-From CRAN, once published:
-
-```r
-install.packages("rsDCM")
-```
-
-## Quick start
+## Quick start: Robust and sparse group inference
 
 ```r
 library(rsDCM)
+set.seed(1)
+N <- 12L
+p <- 3L
+X_G <- matrix(1, N, 1, dimnames = list(NULL, "intercept"))
+eta <- matrix(rnorm(N * p, sd = 0.25), N, p)
+eta[, 1] <- eta[, 1] + 0.7
+colnames(eta) <- paste0("P", seq_len(p))
+Cp <- replicate(N, diag(0.1, p), simplify = FALSE)
+V <- lapply(seq_len(p), function(j) {
+  z <- matrix(0, p, p)
+  z[j, j] <- 1
+  z
+})
 
-# Three-region toy DCM shipped with the package (482 scans, one input)
-data(toy_dcm)
-
-# Invert. Takes roughly 75 seconds on this dataset.
-fit <- dcm_estimate(toy_dcm)
-
-# Posterior connectivity
-round(fit$Ep$A, 3)
-
-# Variational free energy (log-evidence proxy)
-fit$F
+fit <- rsdcm(
+  eta, Cp, X_G, V, n_starts = 1L, max_iter = 100L,
+  pip_mcmc_iter = 1000L, pip_mcmc_burn = 400L,
+  pip_mcmc_thin = 5L, pip_mcmc_chains = 2L,
+  pip_mcmc_temperatures = 4L, verbose = FALSE
+)
+cbind(fit$beta_mat, PIP = fit$inclusion[, 1])
 ```
 
-The introductory vignette has more detail:
+## Single-subject DCM
 
 ```r
-vignette("introduction", package = "rsDCM")
+data(toy_dcm)
+fit_dcm <- dcm_estimate(toy_dcm)
+round(fit_dcm$Ep$A, 3)
+fit_dcm$F
 ```
 
-## What's exported
+See `vignette("introduction", package = "rsDCM")` for further details.
 
-User-facing entry points:
+## Source organization
 
-- `dcm_estimate()`: full DCM inversion.
-- `dcm_fmri_priors()`: build priors from adjacency arrays.
-- `dcm_nlsi_GN()`: variational Laplace optimisation (lower-level).
-- `dcm_int()`: bilinear-system integrator (lower-level).
-- `dcm_fx_fmri()`, `dcm_gx_fmri()`: neural and BOLD equations.
-- `dcm_evidence()`: AIC / BIC summary of a fit.
-- `rsdcm_options()`: adjust runtime options (e.g. FD step).
+- `R/rsDCM.R` contains the novel robust and sparse group method.
+- `R/DCM.R` contains the SPM25-derived MATLAB ports.
+- `src/` contains the registered C++ parallel-tempering sampler.
 
-Group-level (Parametric Empirical Bayes):
+## License and acknowledgment
 
-- `dcm_peb_prepare()`, `dcm_peb_run()`: fit a second- or third-level PEB.
-- `dcm_peb_of_pebs()`: third-level PEB-of-PEBs over a directory of
-  subject PEBs.
-- `dcm_peb_design()`: build the between-subject design matrix.
-- `dcm_peb_files()`, `dcm_peb_load()`: locate/load subject PEBs
-  (`.rds` or MATLAB `.mat`).
-
-Group-level (robust and sparse, Student-t + pMOM):
-
-- `rsdcm()`: robust, sparse group DCM using Student-t subject
-  weighting, a nonlocal product-moment (pMOM) spike-and-slab prior
-  (inclusion probabilities), and ReML variance components.
-- `rsdcm_fit()`: wrapper that assembles the group model from a
-  list of `dcm_estimate()` fits.
-
-The `narps_dcm` dataset (48 subjects, from the openly shared NARPS data)
-is the runnable real-data example for `rsdcm()`.
-
-Lower-level utilities (`dcm_vec`, `dcm_inv`, `dcm_logdet`, ...) are also
-exported and have their own help pages, so you can call them directly as
-`dcm_vec()`. They are marked `@keywords internal`, which only keeps them
-out of the package index. Access is not restricted, and the `:::`
-operator is not needed for them.
-
-## Acknowledgment
-
-`rsDCM` is a derivative work of the MATLAB SPM25 toolbox, distributed
-under GPL-2 by the Wellcome Centre for Human Neuroimaging. See
-[`LICENSE.note`](LICENSE.note) for the list of ported routines and
-the references.
-
-## License
-
-GPL-2.
+The package is licensed under GPL-2. The SPM25-derived functions remain
+subject to their original copyright and license. See `LICENSE.note` for the
+list of ported routines.
 
 ## References
 
-- Arhin, G., Sanyal, N. (2026). Robust and sparse group dynamic causal
-  modeling via Student-t parametric empirical Bayes and nonlocal priors.
-  arXiv:2609.06379. <https://doi.org/10.48550/arXiv.2609.06379>
-- Botvinik-Nezer, R., Holzmeister, F., Camerer, C.F., et al. (2020).
-  Variability in the analysis of a single neuroimaging dataset by many
-  teams. *Nature*, **582**(7810), 84-88.
-  <https://doi.org/10.1038/s41586-020-2314-9>
-- Friston, K.J., Harrison, L., Penny, W. (2003). Dynamic causal
-  modelling. *NeuroImage*, **19**(4), 1273-1302.
-  <https://doi.org/10.1016/S1053-8119(03)00202-7>
-- Friston, K.J., Mattout, J., Trujillo-Barreto, N., Ashburner, J.,
-  Penny, W. (2007). Variational free energy and the Laplace
-  approximation. *NeuroImage*, **34**(1), 220-234.
-  <https://doi.org/10.1016/j.neuroimage.2006.08.035>
-- Valério, D., Peres, A., Bergström, F., Seidel, P., Almeida, J. (2025).
-  Neural and behavioral similarity-driven tuning curves for manipulable
-  objects. *Imaging Neuroscience*, **3**.
-  <https://doi.org/10.1162/imag_a_00482>
+Arhin, G. and Sanyal, N. (2026). Robust and Sparse Group Dynamic Causal
+Modeling via Student-t Parametric Empirical Bayes and Nonlocal Priors.
+[doi:10.48550/arXiv.2609.06379](https://doi.org/10.48550/arXiv.2609.06379)
+
+Friston, K. J., Harrison, L., and Penny, W. (2003). Dynamic causal modelling.
+*NeuroImage*, 19(4), 1273--1302.
+[doi:10.1016/S1053-8119(03)00202-7](https://doi.org/10.1016/S1053-8119(03)00202-7)

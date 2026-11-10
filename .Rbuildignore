@@ -1,11 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^data-raw$
-^README\.Rmd$
 ^\.github$
 ^\.gitignore$
 ^cran-comments\.md$
 ^cran-comments\.txt$
-^BUILD_AND_RELEASE\.md$
-^doc$
+^docs$
+^pkgdown$
 ^Meta$
