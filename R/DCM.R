@@ -3006,7 +3006,7 @@ dcm_peb_prepare <- function(P, M = list(), field = c("A", "B")) {
   # every element instead; this is the default path of dcm_peb_of_pebs.
   if (is.character(field) && length(field) == 1L && tolower(field) == "all") {
     field <- if (is.null(names(pE))) {
-      seq_len(length(dcm_vec(pE)))
+      seq_along(dcm_vec(pE))
     } else {
       names(pE)
     }
@@ -3154,7 +3154,7 @@ dcm_peb_prepare <- function(P, M = list(), field = c("A", "B")) {
     k <- 1
     for (i in seq_along(Qcells)) {
       diag_idx <- which(diag(Qcells[[i]]) != 0)
-      jj <- which(seq_len(length(dcm_vec(DCM$M$pE))) %in% q[diag_idx])
+      jj <- which(seq_along(dcm_vec(DCM$M$pE)) %in% q[diag_idx])
       Qi <- matrix(0, Np, Np)
       if (length(jj)) Qi[jj, jj] <- pq[jj, jj, drop = FALSE]
       qk <- t(U) %*% Qi %*% U
@@ -3346,7 +3346,7 @@ dcm_peb_run <- function(prep, verbose = TRUE) {
                          cbind(matrix(0, nrow(dFdgg), ncol(dFdbb)), dFdgg))
       dp <- dcm_dx(dFdpp_blk, dFdp, list(t_fs))
     }
-    db <- dp[seq_len(length(b))]
+    db <- dp[seq_along(b)]
     b  <- b + db
     if (Ng > 0) {
       # NB: guard the slice; with Ng == 0 the expression (length(b)+1):length(dp)
