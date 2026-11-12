@@ -429,7 +429,7 @@ build_Sigma_b <- function(alpha, V_list, p) {
 # M_n = C_theta_y_n + Sigma_b
 # S_n = solve(M_n)
 # B_n^T B_n = S_n = (C_n + Sigma_b)^(-1)
-# Then y_star = B(α) vec(eta_theta_y), X_star = B(α) (X_G ⊗ I_p)
+# Then y_star = B(alpha) vec(eta_theta_y), X_star = B(alpha) (X_G kron I_p)
 whiten_data <- function(eta_theta_y, C_theta_y_list, X_G, Sigma_b,
                         whitening_method = c("precision_chol", "covariance_chol", "symmetric")) {
   whitening_method <- match.arg(whitening_method)
@@ -484,7 +484,7 @@ whiten_data <- function(eta_theta_y, C_theta_y_list, X_G, Sigma_b,
     # Indices for this subject's block in y_star and X_star
     idx <- row_start:(row_start + p - 1L)
 
-    # Subject-specific design: X_tilde_n = (x_n^T ⊗ I_p), dimension p x (p*r)
+    # Subject-specific design: X_tilde_n = (x_n^T kron I_p), dimension p x (p*r)
     Xn_tilde <- kronecker(matrix(X_G[n, ], nrow = 1), diag(p))
 
     # Pre-whiten
@@ -562,10 +562,10 @@ expected_complete_t_log_posterior <- function(
 # optimize the normalized Student-t objective.
 # Compute the Gaussian gradient and Hessian for alpha using block structure:
 # Pi = blockdiag(S_1, ..., S_N), with S_n = (C_n + Sigma_b)^(-1).
-# dCov/d alpha_k = I_N ⊗ V_k -> blockdiag(V_k,...,V_k).
+# dCov/d alpha_k = I_N kron V_k -> blockdiag(V_k,...,V_k).
 # g_k = 0.5 * tr(Pi dCov/d alpha_k) - 0.5 * e^T Pi dCov/d alpha_k Pi e
 # H_kl = 0.5 * tr(Pi dCov/d alpha_k Pi dCov/d alpha_l)
-# where e = vec(eta_theta_y) - (X_G ⊗ I_p) beta.
+# where e = vec(eta_theta_y) - (X_G kron I_p) beta.
 # Also returns the separated trace and quadratic terms
 # Tr_k = sum_n tr(S_n V_k),   Qd_k = sum_n e_n^T S_n V_k S_n e_n,
 # These quantities drove the superseded multiplicative Q/Tr update.
